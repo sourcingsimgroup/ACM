@@ -104,8 +104,8 @@
 
     .filters{
       display:grid;
-      grid-template-columns:repeat(4,minmax(0,1fr));
-      gap:12px;
+      grid-template-columns:repeat(5,minmax(0,1fr)); /* 5 filter sejajar */
+      gap:10px;
       margin-top:10px;
     }
 
@@ -125,9 +125,14 @@
       font-size:0.8rem;
     }
 
+    .filter-group-double{
+      gap:6px;
+    }
+
     .filter-label{
       font-weight:600;
       color:var(--muted);
+      font-size:0.78rem;
     }
 
     /* Multi-select custom */
@@ -139,12 +144,12 @@
       border-radius:999px;
       border:1px solid var(--line);
       background:#f9fafb;
-      padding:8px 10px;
-      font-size:0.8rem;
+      padding:7px 9px;
+      font-size:0.78rem;
       display:flex;
       align-items:center;
       justify-content:space-between;
-      gap:8px;
+      gap:6px;
       cursor:pointer;
     }
     .ms-placeholder{
@@ -155,12 +160,12 @@
       text-overflow:ellipsis;
     }
     .ms-counter{
-      font-size:0.7rem;
+      font-size:0.68rem;
       color:var(--muted);
       white-space:nowrap;
     }
     .ms-arrow{
-      font-size:0.7rem;
+      font-size:0.68rem;
     }
     .ms-panel{
       position:absolute;
@@ -288,55 +293,53 @@
       height:8px;
       border-radius:999px;
     }
-    
+
     /* warna: biru untuk Valid, oranye untuk Buffer */
     .legend-valid{background:#2563eb;}
     .legend-buffer{background:#f97316;}
-    
+
     .chart-body{
       display:flex;
       align-items:flex-end;
       gap:10px;
-      height:260px;             /* tinggi area grafik */
+      height:260px;
       padding:8px 8px 4px;
       border-radius:16px;
       background:linear-gradient(to top,#f9fafb,#ffffff);
       border:1px solid var(--line);
       overflow-x:auto;
     }
-    
-    /* setiap bulan = 1 kolom */
+
     .chart-col{
       flex:1;
       min-width:48px;
-      height:100%;              /* PENTING: agar % tinggi bar punya referensi */
+      height:100%;
       display:flex;
       flex-direction:column;
       align-items:center;
       justify-content:flex-end;
       gap:4px;
     }
-    
+
     .chart-col-bars{
-      flex:1;                   /* area bar memenuhi tinggi kolom */
+      flex:1;
       display:flex;
       align-items:flex-end;
       justify-content:center;
       gap:4px;
       width:100%;
     }
-    
+
     .chart-bar-vert{
       width:14px;
       border-radius:6px 6px 0 0;
       background:#e5e7eb;
       transition:height .25s ease-out;
     }
-    
-    /* warna bar */
-    .bar-valid{background:#2563eb;}   /* biru */
-    .bar-buffer{background:#f97316;}  /* oranye */
-    
+
+    .bar-valid{background:#2563eb;}
+    .bar-buffer{background:#f97316;}
+
     .chart-col-values{
       font-size:0.7rem;
       text-align:center;
@@ -344,21 +347,20 @@
       color:#111827;
       line-height:1.2;
     }
-    
+
     .chart-col-label{
       font-size:0.7rem;
       text-align:center;
       color:var(--muted);
       white-space:nowrap;
     }
-    
+
     .chart-footer{
       margin-top:6px;
       font-size:0.72rem;
       color:var(--muted);
       font-style:italic;
     }
-
 
     /* Summary cards */
     .summary-row{
@@ -568,7 +570,7 @@
   <header>
     <div class="title-block">
       <h1>Applicant Cycle Management</h1>
-      <p>Preview analisa Applicant Valid &amp; Buffer berdasarkan provinsi, metode sourcing, media sosial, dan pendidikan.</p>
+      <p>Preview analisa Applicant Valid &amp; Buffer berdasarkan provinsi, metode sourcing, media sosial, pendidikan, dan job type.</p>
     </div>
     <div class="title-right">
       <span class="pill">
@@ -655,10 +657,44 @@
           </div>
         </div>
       </div>
+
+      <!-- Kolom ke-5: Job Parent + Job Type -->
+      <div class="filter-group filter-group-double">
+        <div>
+          <label class="filter-label">Job Parent (kolom AH)</label>
+          <div class="ms" id="ms-job-parent">
+            <button type="button" class="ms-toggle">
+              <span class="ms-placeholder">Semua Job Parent</span>
+              <span class="ms-counter"></span>
+              <span class="ms-arrow">▾</span>
+            </button>
+            <div class="ms-panel">
+              <input class="ms-search" type="text" placeholder="Cari job parent..." />
+              <div class="ms-options"></div>
+              <div class="ms-empty">Tidak ada job parent</div>
+            </div>
+          </div>
+        </div>
+        <div>
+          <label class="filter-label">Job Type (kolom AI)</label>
+          <div class="ms ms-disabled" id="ms-job-type">
+            <button type="button" class="ms-toggle">
+              <span class="ms-placeholder">Pilih Job Parent terlebih dahulu</span>
+              <span class="ms-counter"></span>
+              <span class="ms-arrow">▾</span>
+            </button>
+            <div class="ms-panel">
+              <input class="ms-search" type="text" placeholder="Cari job type..." />
+              <div class="ms-options"></div>
+              <div class="ms-empty">Tidak ada job type</div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <div class="filter-hint">
-      * Klik filter untuk membuka daftar + kolom search. Bisa memilih lebih dari satu nilai di setiap filter.
+      * Klik filter untuk membuka daftar + kolom search. Bisa memilih lebih dari satu nilai di setiap filter. Job Type baru muncul setelah Job Parent dipilih.
     </div>
 
     <div id="load-state" class="loading">
@@ -884,6 +920,8 @@
   const COL_MEDIA_PREF= "SUMBER MEDIA SOSIAL";
   const COL_EDU       = "PENDIDIKAN TERAKHIR";
   const COL_GENDER    = "JENIS KELAMIN";
+  const COL_JOB_PARENT= "JOB PARENT";  // kolom AH
+  const COL_JOB_TYPE  = "JOB TYPE";    // kolom AI
 
   const KATEGORI_VALID_TARGET = "APLIKAN VALID - CTC 1";
 
@@ -927,8 +965,9 @@
   let rawRows = [];
   let DETECTED_COL_MEDIA = COL_MEDIA_PREF;
   const provKotaMap = new Map();
+  const jobParentTypeMap = new Map();
 
-  let msProv, msKota, msCycle, msPeriode;
+  let msProv, msKota, msCycle, msPeriode, msJobParent, msJobType;
 
   const $ = id => document.getElementById(id);
   const numberFmt = new Intl.NumberFormat('id-ID',{maximumFractionDigits:0});
@@ -1067,7 +1106,7 @@
     return {getSelected,setOptions,setDisabled,clear};
   }
 
-  /********** PROV-KOTA MAP **********/
+  /********** MAP PROV-KOTA & JOBPARENT-JOBTYPE **********/
   function buildProvKotaMap(){
     provKotaMap.clear();
     rawRows.forEach(row=>{
@@ -1077,6 +1116,18 @@
       const provStr = String(p);
       if(!provKotaMap.has(provStr)) provKotaMap.set(provStr,new Set());
       provKotaMap.get(provStr).add(String(k));
+    });
+  }
+
+  function buildJobParentTypeMap(){
+    jobParentTypeMap.clear();
+    rawRows.forEach(row=>{
+      const jp = row[COL_JOB_PARENT];
+      const jt = row[COL_JOB_TYPE];
+      if(!jp || !jt) return;
+      const parentStr = String(jp);
+      if(!jobParentTypeMap.has(parentStr)) jobParentTypeMap.set(parentStr,new Set());
+      jobParentTypeMap.get(parentStr).add(String(jt));
     });
   }
 
@@ -1097,12 +1148,31 @@
     msKota.setDisabled(false);
   }
 
+  function updateJobTypeOptionsByParent(selectedParents){
+    if(!msJobType) return;
+    if(!selectedParents || !selectedParents.length){
+      msJobType.setOptions([]);
+      msJobType.setDisabled(true);
+      return;
+    }
+    const typeSet = new Set();
+    selectedParents.forEach(p=>{
+      const s = jobParentTypeMap.get(p);
+      if(s) s.forEach(t=>typeSet.add(t));
+    });
+    const typeList = uniqueSorted(Array.from(typeSet));
+    msJobType.setOptions(typeList);
+    msJobType.setDisabled(false);
+  }
+
   function initFilters(){
     buildProvKotaMap();
+    buildJobParentTypeMap();
 
-    const provVals    = uniqueSorted(Array.from(provKotaMap.keys()));
-    const cycleVals   = uniqueSorted(rawRows.map(r => r[COL_CYCLE]));
-    const periodeVals = uniqueSorted(rawRows.map(r => r[COL_PERIODE]));
+    const provVals      = uniqueSorted(Array.from(provKotaMap.keys()));
+    const cycleVals     = uniqueSorted(rawRows.map(r => r[COL_CYCLE]));
+    const periodeVals   = uniqueSorted(rawRows.map(r => r[COL_PERIODE]));
+    const jobParentVals = uniqueSorted(Array.from(jobParentTypeMap.keys()));
 
     msProv = createMultiSelect("ms-prov",provVals,"Semua Provinsi",false,(sel)=>{
       updateKotaOptionsByProv(sel);
@@ -1117,36 +1187,56 @@
     msPeriode = createMultiSelect("ms-periode",periodeVals,"Semua Periode",false,()=>{
       updateAllTables();
     });
+
+    msJobParent = createMultiSelect("ms-job-parent",jobParentVals,"Semua Job Parent",false,(sel)=>{
+      updateJobTypeOptionsByParent(sel);
+      updateAllTables();
+    });
+    msJobType = createMultiSelect("ms-job-type",[], "Semua Job Type",true,()=>{
+      updateAllTables();
+    });
   }
 
   function clearFilters(){
-    if(msProv)    msProv.clear();
-    if(msCycle)   msCycle.clear();
-    if(msPeriode) msPeriode.clear();
+    if(msProv)      msProv.clear();
+    if(msCycle)     msCycle.clear();
+    if(msPeriode)   msPeriode.clear();
     if(msKota){
       msKota.setOptions([]);
       msKota.setDisabled(true);
+    }
+    if(msJobParent) msJobParent.clear();
+    if(msJobType){
+      msJobType.setOptions([]);
+      msJobType.setDisabled(true);
     }
     updateAllTables();
   }
 
   /********** FILTERED ROWS (MULTI FILTER) **********/
   function getFilteredRows(){
-    const provSel    = new Set(msProv ? msProv.getSelected()    : []);
-    const kotaSel    = new Set(msKota ? msKota.getSelected()    : []);
-    const cycleSel   = new Set(msCycle ? msCycle.getSelected()  : []);
-    const periodeSel = new Set(msPeriode ? msPeriode.getSelected():[]);
+    const provSel      = new Set(msProv ? msProv.getSelected()      : []);
+    const kotaSel      = new Set(msKota ? msKota.getSelected()      : []);
+    const cycleSel     = new Set(msCycle ? msCycle.getSelected()    : []);
+    const periodeSel   = new Set(msPeriode ? msPeriode.getSelected():[]);
+    const jobParentSel = new Set(msJobParent ? msJobParent.getSelected():[]);
+    const jobTypeSel   = new Set(msJobType ? msJobType.getSelected():[]);
 
     return rawRows.filter(row=>{
-      const rowProv    = String(row[COL_PROV] ?? "");
-      const rowKota    = String(row[COL_KOTA] ?? "");
-      const rowCycle   = String(row[COL_CYCLE] ?? "");
-      const rowPeriode = String(row[COL_PERIODE] ?? "");
+      const rowProv      = String(row[COL_PROV] ?? "");
+      const rowKota      = String(row[COL_KOTA] ?? "");
+      const rowCycle     = String(row[COL_CYCLE] ?? "");
+      const rowPeriode   = String(row[COL_PERIODE] ?? "");
+      const rowJobParent = String(row[COL_JOB_PARENT] ?? "");
+      const rowJobType   = String(row[COL_JOB_TYPE] ?? "");
 
-      if(provSel.size    && !provSel.has(rowProv)) return false;
-      if(kotaSel.size    && !kotaSel.has(rowKota)) return false;
-      if(cycleSel.size   && !cycleSel.has(rowCycle)) return false;
-      if(periodeSel.size && !periodeSel.has(rowPeriode)) return false;
+      if(provSel.size      && !provSel.has(rowProv)) return false;
+      if(kotaSel.size      && !kotaSel.has(rowKota)) return false;
+      if(cycleSel.size     && !cycleSel.has(rowCycle)) return false;
+      if(periodeSel.size   && !periodeSel.has(rowPeriode)) return false;
+      if(jobParentSel.size && !jobParentSel.has(rowJobParent)) return false;
+      if(jobTypeSel.size   && !jobTypeSel.has(rowJobType)) return false;
+
       return true;
     });
   }
@@ -1349,11 +1439,6 @@
       const col = document.createElement("div");
       col.className = "chart-col";
 
-      const valuesBox = document.createElement("div");
-      valuesBox.className = "chart-col-values";
-      valuesBox.innerHTML =
-        `<div>${numberFmt.format(m.valid)}</div><div>${numberFmt.format(m.buffer)}</div>`;
-
       const barsBox = document.createElement("div");
       barsBox.className = "chart-col-bars";
 
@@ -1368,12 +1453,17 @@
       barsBox.appendChild(barValid);
       barsBox.appendChild(barBuffer);
 
+      const valuesBox = document.createElement("div");
+      valuesBox.className = "chart-col-values";
+      valuesBox.innerHTML =
+        `<div>${numberFmt.format(m.valid)}</div><div>${numberFmt.format(m.buffer)}</div>`;
+
       const label = document.createElement("div");
       label.className = "chart-col-label";
       label.textContent = m.name;
 
-      col.appendChild(valuesBox);
       col.appendChild(barsBox);
+      col.appendChild(valuesBox);
       col.appendChild(label);
       container.appendChild(col);
     });
