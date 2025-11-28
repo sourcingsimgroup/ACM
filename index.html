@@ -661,7 +661,7 @@
       <!-- Kolom ke-5: Job Parent + Job Type -->
       <div class="filter-group filter-group-double">
         <div>
-          <label class="filter-label">Job Parent</label>
+          <label class="filter-label">Job Parent (kolom AH)</label>
           <div class="ms" id="ms-job-parent">
             <button type="button" class="ms-toggle">
               <span class="ms-placeholder">Semua Job Parent</span>
@@ -676,7 +676,7 @@
           </div>
         </div>
         <div>
-          <label class="filter-label">Job Type</label>
+          <label class="filter-label">Job Type (kolom AI)</label>
           <div class="ms ms-disabled" id="ms-job-type">
             <button type="button" class="ms-toggle">
               <span class="ms-placeholder">Pilih Job Parent terlebih dahulu</span>
@@ -920,8 +920,10 @@
   const COL_MEDIA_PREF= "SUMBER MEDIA SOSIAL";
   const COL_EDU       = "PENDIDIKAN TERAKHIR";
   const COL_GENDER    = "JENIS KELAMIN";
-  const COL_JOB_PARENT= "JOB PARENT";  // kolom AH
-  const COL_JOB_TYPE  = "JOB TYPE";    // kolom AI
+
+  /* JOB PARENT / JOB TYPE akan di-DETEKSI dari header */
+  let COL_JOB_PARENT = "JOB PARENT";
+  let COL_JOB_TYPE   = "JOB TYPE";
 
   const KATEGORI_VALID_TARGET = "APLIKAN VALID - CTC 1";
 
@@ -1104,6 +1106,41 @@
     updateLabel();
 
     return {getSelected,setOptions,setDisabled,clear};
+  }
+
+  /********** DETECT COLUMN NAMES **********/
+  function detectMediaColumn(fields){
+    if(!fields || !fields.length) return COL_MEDIA_PREF;
+    const preferredNorm = norm(COL_MEDIA_PREF);
+    let found = fields.find(f=>norm(f)===preferredNorm);
+    if(found) return found;
+
+    const candidates = fields.filter(f=>{
+      const s = norm(f);
+      return s.includes("MEDIA") || s.includes("SOSIAL") || s.includes("SUMBER");
+    });
+    return candidates[0] || COL_MEDIA_PREF;
+  }
+
+  function detectJobColumns(fields){
+    if(!fields || !fields.length) return {parent:COL_JOB_PARENT,type:COL_JOB_TYPE};
+    let parent = null;
+    let type   = null;
+
+    for(const f of fields){
+      const s = norm(f);
+      if(!parent && s.includes("JOB") && s.includes("PARENT")){
+        parent = f;
+      }
+      if(!type && s.includes("JOB") && s.includes("TYPE")){
+        type = f;
+      }
+    }
+
+    return {
+      parent: parent || COL_JOB_PARENT,
+      type:   type   || COL_JOB_TYPE
+    };
   }
 
   /********** MAP PROV-KOTA & JOBPARENT-JOBTYPE **********/
@@ -1598,20 +1635,6 @@
       `Grand Total Valid: ${numberFmt.format(totalEdu.grandValid)}, Buffer: ${numberFmt.format(totalEdu.grandBuffer)}`;
   }
 
-  /********** DETECT MEDIA COLUMN **********/
-  function detectMediaColumn(fields){
-    if(!fields || !fields.length) return COL_MEDIA_PREF;
-    const preferredNorm = norm(COL_MEDIA_PREF);
-    let found = fields.find(f=>norm(f)===preferredNorm);
-    if(found) return found;
-
-    const candidates = fields.filter(f=>{
-      const s = norm(f);
-      return s.includes("MEDIA") || s.includes("SOSIAL") || s.includes("SUMBER");
-    });
-    return candidates[0] || COL_MEDIA_PREF;
-  }
-
   /********** LOAD CSV **********/
   async function loadCsv(){
     $("error-state").style.display = "none";
@@ -1624,7 +1647,13 @@
 
       const parsed = Papa.parse(text,{header:true,skipEmptyLines:true});
       rawRows = parsed.data || [];
-      DETECTED_COL_MEDIA = detectMediaColumn(parsed.meta && parsed.meta.fields);
+
+      const fields = parsed.meta && parsed.meta.fields ? parsed.meta.fields : [];
+
+      DETECTED_COL_MEDIA = detectMediaColumn(fields);
+      const jobCols = detectJobColumns(fields);
+      COL_JOB_PARENT = jobCols.parent;
+      COL_JOB_TYPE   = jobCols.type;
 
       $("load-state").style.display = "none";
 
