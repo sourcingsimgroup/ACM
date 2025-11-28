@@ -143,6 +143,11 @@
       box-shadow:0 0 0 3px rgba(37,99,235,0.18);
       background:#ffffff;
     }
+    select:disabled{
+      background:#e5e7eb;
+      color:#9ca3af;
+      cursor:not-allowed;
+    }
 
     .filter-hint{
       margin-top:8px;
@@ -346,8 +351,8 @@
       </div>
       <div class="filter-group">
         <label class="filter-label" for="filter-kota">Kota Minat Penempatan</label>
-        <select id="filter-kota">
-          <option value="ALL">Semua Kota</option>
+        <select id="filter-kota" disabled>
+          <option value="ALL">Pilih provinsi terlebih dahulu</option>
         </select>
       </div>
       <div class="filter-group">
@@ -365,7 +370,7 @@
     </div>
 
     <div class="filter-hint">
-      * Filter ini hanya mempengaruhi perhitungan tabel preview di bawah.
+      * Kota minat muncul setelah memilih provinsi. Filter mempengaruhi seluruh tabel di bawah.
     </div>
 
     <div id="load-state" class="loading">
@@ -610,22 +615,25 @@
    * STATE
    ****************************************************/
   let rawRows = [];
+  const provKotaMap = new Map(); // provinsi -> Set(kota)
 
   const $ = (id) => document.getElementById(id);
 
   const numberFmt = new Intl.NumberFormat('id-ID',{maximumFractionDigits:0});
 
+  function normalizeKey(v){
+    return String(v ?? "").trim().toUpperCase();
+  }
+
   // Applicant Valid = hitung baris dengan KATEGORI APP == "APLIKAN VALID - CTC 1"
   function getApplicantValidValue(raw){
-    if(raw === null || raw === undefined) return 0;
-    const str = String(raw).trim().toUpperCase();
-    return str === KATEGORI_VALID_TARGET.toUpperCase() ? 1 : 0;
+    const str = normalizeKey(raw);
+    return str === normalizeKey(KATEGORI_VALID_TARGET) ? 1 : 0;
   }
 
   // Buffer = hitung baris dengan QUALIFIED == "YES"
   function isQualifiedYes(raw){
-    if(raw === null || raw === undefined) return false;
-    const str = String(raw).trim().toUpperCase();
+    const str = normalizeKey(raw);
     return str === "YES" || str === "YA";
   }
 
@@ -633,14 +641,39 @@
     return Array.from(new Set(list.filter(Boolean))).sort((a,b)=>String(a).localeCompare(String(b),'id'));
   }
 
+  function buildProvKotaMap(){
+    provKotaMap.clear();
+    rawRows.forEach(row=>{
+      const p = row[COL_PROV];
+      const k = row[COL_KOTA];
+      if(!p || !k) return;
+      const keyProv = String(p);
+      if(!provKotaMap.has(keyProv)){
+        provKotaMap.set(keyProv, new Set());
+      }
+      provKotaMap.get(keyProv).add(String(k));
+    });
+  }
+
   function initFilters(){
-    const provVals    = uniqueSorted(rawRows.map(r => r[COL_PROV]));
-    const kotaVals    = uniqueSorted(rawRows.map(r => r[COL_KOTA]));
+    buildProvKotaMap();
+
+    const provVals    = uniqueSorted(Array.from(provKotaMap.keys()));
     const cycleVals   = uniqueSorted(rawRows.map(r => r[COL_CYCLE]));
     const periodeVals = uniqueSorted(rawRows.map(r => r[COL_PERIODE]));
 
+    // Provinsi full list
     fillSelect("filter-prov", provVals, "Semua Provinsi");
-    fillSelect("filter-kota", kotaVals, "Semua Kota");
+
+    // Kota: awalnya disabled, tunggu provinsi dipilih
+    const kotaSel = $("filter-kota");
+    kotaSel.innerHTML = "";
+    const optK = document.createElement("option");
+    optK.value = "ALL";
+    optK.textContent = "Pilih provinsi terlebih dahulu";
+    kotaSel.appendChild(optK);
+    kotaSel.disabled = true;
+
     fillSelect("filter-cycle", cycleVals, "Semua Cycle");
     fillSelect("filter-periode", periodeVals, "Semua Periode");
   }
@@ -661,6 +694,38 @@
     });
   }
 
+  function updateKotaOptionsByProv(){
+    const prov = $("filter-prov").value;
+    const kotaSel = $("filter-kota");
+
+    if(prov === "ALL"){
+      kotaSel.disabled = true;
+      kotaSel.innerHTML = "";
+      const opt = document.createElement("option");
+      opt.value = "ALL";
+      opt.textContent = "Pilih provinsi terlebih dahulu";
+      kotaSel.appendChild(opt);
+      return;
+    }
+
+    const kotaSet = provKotaMap.get(prov) || new Set();
+    const kotaVals = uniqueSorted(Array.from(kotaSet));
+
+    kotaSel.disabled = false;
+    kotaSel.innerHTML = "";
+    const optAll = document.createElement("option");
+    optAll.value = "ALL";
+    optAll.textContent = "Semua kota di provinsi ini";
+    kotaSel.appendChild(optAll);
+
+    kotaVals.forEach(k=>{
+      const o = document.createElement("option");
+      o.value = k;
+      o.textContent = k;
+      kotaSel.appendChild(o);
+    });
+  }
+
   function getFilteredRows(){
     const prov    = $("filter-prov").value;
     const kota    = $("filter-kota").value;
@@ -668,10 +733,19 @@
     const periode = $("filter-periode").value;
 
     return rawRows.filter(row => {
-      if(prov !== "ALL" && String(row[COL_PROV]) !== String(prov)) return false;
-      if(kota !== "ALL" && String(row[COL_KOTA]) !== String(kota)) return false;
-      if(cycle !== "ALL" && String(row[COL_CYCLE]) !== String(cycle)) return false;
-      if(periode !== "ALL" && String(row[COL_PERIODE]) !== String(periode)) return false;
+      const rowProv    = String(row[COL_PROV] ?? "");
+      const rowKota    = String(row[COL_KOTA] ?? "");
+      const rowCycle   = String(row[COL_CYCLE] ?? "");
+      const rowPeriode = String(row[COL_PERIODE] ?? "");
+
+      if(prov !== "ALL" && rowProv !== prov) return false;
+
+      // Kota hanya difilter jika provinsi sudah dipilih dan kota != ALL
+      if(prov !== "ALL" && kota !== "ALL" && rowKota !== kota) return false;
+
+      if(cycle !== "ALL" && rowCycle !== cycle) return false;
+      if(periode !== "ALL" && rowPeriode !== periode) return false;
+
       return true;
     });
   }
@@ -684,19 +758,25 @@
     }));
 
     const indexByName = new Map();
-    result.forEach((r,idx)=>indexByName.set(r.name, idx));
+    fixedList.forEach((name, idx)=>{
+      indexByName.set(name, idx);
+      indexByName.set(normalizeKey(name), idx);
+    });
 
     rows.forEach(row=>{
-      const key = row[dimCol];
-      if(!key) return;
-      const idx = indexByName.get(String(key));
-      if(idx === undefined) return;
+      const keyRaw = row[dimCol];
+      if(!keyRaw) return;
 
-      // Applicant Valid
+      const keyNorm = normalizeKey(keyRaw);
+      let idx = indexByName.get(keyRaw);
+      if(idx === undefined){
+        idx = indexByName.get(keyNorm);
+      }
+      if(idx === undefined) return; // jika tidak ada di fixed list, abaikan
+
       const validVal = getApplicantValidValue(row[COL_KATEGORI]);
       if(validVal) result[idx].valid += validVal;
 
-      // Buffer
       if(isQualifiedYes(row[COL_QUALIFIED])) result[idx].buffer += 1;
     });
 
@@ -704,7 +784,7 @@
   }
 
   // render table + GRAND TOTAL
-  function renderTable(tbodyId, rows, totalLabel="TOTAL"){
+  function renderTable(tbodyId, rows, totalLabel="GRAND TOTAL"){
     const tbody = $(tbodyId);
     tbody.innerHTML = "";
 
@@ -738,7 +818,7 @@
       grandBuffer += (r.buffer || 0);
     });
 
-    // Baris GRAND TOTAL
+    // Baris GRAND TOTAL (selalu muncul)
     const trTotal = document.createElement("tr");
     trTotal.className = "total-row";
 
@@ -768,35 +848,40 @@
 
     // Tabel 1: Provinsi
     const provAgg = aggregateByFixedList(filtered, COL_PROV, FIXED_PROV_LIST);
-    const totalProv = renderTable("tbl-prov-body", provAgg, "TOTAL PROVINSI");
+    const totalProv = renderTable("tbl-prov-body", provAgg, "GRAND TOTAL PROVINSI");
     $("status-prov").textContent =
       `Ditampilkan ${provAgg.length} provinsi · ${numberFmt.format(totalRows)} baris terfilter · ` +
       `Grand Total Valid: ${numberFmt.format(totalProv.grandValid)}, Buffer: ${numberFmt.format(totalProv.grandBuffer)}`;
 
     // Tabel 2: Metode sourcing
     const metodeAgg = aggregateByFixedList(filtered, COL_METODE, FIXED_METODE_LIST);
-    const totalMetode = renderTable("tbl-metode-body", metodeAgg, "TOTAL METODE");
+    const totalMetode = renderTable("tbl-metode-body", metodeAgg, "GRAND TOTAL METODE");
     $("status-metode").textContent =
       `Ditampilkan ${metodeAgg.length} metode · ${numberFmt.format(totalRows)} baris terfilter · ` +
       `Grand Total Valid: ${numberFmt.format(totalMetode.grandValid)}, Buffer: ${numberFmt.format(totalMetode.grandBuffer)}`;
 
     // Tabel 3: Media sosial
     const mediaAgg = aggregateByFixedList(filtered, COL_MEDIA, FIXED_MEDIA_LIST);
-    const totalMedia = renderTable("tbl-media-body", mediaAgg, "TOTAL MEDIA");
+    const totalMedia = renderTable("tbl-media-body", mediaAgg, "GRAND TOTAL MEDIA");
     $("status-media").textContent =
       `Ditampilkan ${mediaAgg.length} media · ${numberFmt.format(totalRows)} baris terfilter · ` +
       `Grand Total Valid: ${numberFmt.format(totalMedia.grandValid)}, Buffer: ${numberFmt.format(totalMedia.grandBuffer)}`;
 
     // Tabel 4: Pendidikan
     const eduAgg = aggregateByFixedList(filtered, COL_EDU, FIXED_EDU_LIST);
-    const totalEdu = renderTable("tbl-edu-body", eduAgg, "TOTAL PENDIDIKAN");
+    const totalEdu = renderTable("tbl-edu-body", eduAgg, "GRAND TOTAL PENDIDIKAN");
     $("status-edu").textContent =
       `Ditampilkan ${eduAgg.length} level pendidikan · ${numberFmt.format(totalRows)} baris terfilter · ` +
       `Grand Total Valid: ${numberFmt.format(totalEdu.grandValid)}, Buffer: ${numberFmt.format(totalEdu.grandBuffer)}`;
   }
 
   function attachFilterEvents(){
-    ["filter-prov","filter-kota","filter-cycle","filter-periode"].forEach(id=>{
+    $("filter-prov").addEventListener("change", ()=>{
+      updateKotaOptionsByProv();
+      updateAllTables();
+    });
+
+    ["filter-kota","filter-cycle","filter-periode"].forEach(id=>{
       $(id).addEventListener("change", updateAllTables);
     });
   }
