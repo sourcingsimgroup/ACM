@@ -24,6 +24,9 @@
       --line:#e5e7eb;
       --radius:18px;
       --shadow:0 18px 40px rgba(15,23,42,0.08);
+      --male:#1d4ed8;
+      --female:#db2777;
+      --total:#059669;
     }
 
     *{box-sizing:border-box;margin:0;padding:0}
@@ -44,7 +47,6 @@
     .app-shell{
       width:100%;
       max-width:1240px;
-      background:transparent;
     }
 
     header{
@@ -97,7 +99,7 @@
     }
 
     .filter-card{
-      margin-bottom:18px;
+      margin-bottom:14px;
     }
 
     .filters{
@@ -119,13 +121,22 @@
     .filter-group{
       display:flex;
       flex-direction:column;
-      gap:5px;
+      gap:4px;
       font-size:0.8rem;
     }
 
     .filter-label{
       font-weight:600;
       color:var(--muted);
+    }
+
+    .filter-search{
+      padding:6px 9px;
+      border-radius:999px;
+      border:1px dashed var(--line);
+      font-size:0.75rem;
+      background:#f9fafb;
+      outline:none;
     }
 
     select{
@@ -154,6 +165,71 @@
       font-size:0.75rem;
       color:var(--muted);
     }
+
+    .summary-row{
+      display:grid;
+      grid-template-columns:repeat(3,minmax(0,1fr));
+      gap:12px;
+      margin-bottom:18px;
+    }
+    @media (max-width:900px){
+      .summary-row{grid-template-columns:1fr;}
+    }
+
+    .summary-card{
+      border-radius:16px;
+      padding:12px 14px;
+      background:#ffffff;
+      box-shadow:0 14px 30px rgba(15,23,42,0.06);
+      border:1px solid rgba(148,163,184,0.2);
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+    }
+
+    .summary-header{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      font-size:0.78rem;
+    }
+
+    .summary-title{
+      font-weight:600;
+    }
+
+    .summary-tag{
+      font-size:0.7rem;
+      padding:3px 8px;
+      border-radius:999px;
+      background:#f3f4f6;
+    }
+
+    .summary-body{
+      display:flex;
+      justify-content:space-between;
+      gap:8px;
+      font-size:0.8rem;
+      margin-top:4px;
+    }
+
+    .summary-metric{
+      flex:1;
+    }
+
+    .summary-label{
+      color:var(--muted);
+      font-size:0.73rem;
+    }
+
+    .summary-value{
+      font-weight:700;
+      font-size:0.95rem;
+    }
+
+    .summary-card.male .summary-title{color:var(--male);}
+    .summary-card.female .summary-title{color:var(--female);}
+    .summary-card.total .summary-title{color:var(--total);}
 
     .grid{
       display:grid;
@@ -330,6 +406,7 @@
     </div>
   </header>
 
+  <!-- FILTER -->
   <section class="card filter-card">
     <div class="card-title-row">
       <div class="card-title">Filter Data Applicant</div>
@@ -342,24 +419,28 @@
     <div class="filters">
       <div class="filter-group">
         <label class="filter-label" for="filter-prov">Provinsi Minat Penempatan</label>
+        <input id="search-prov" class="filter-search" placeholder="Cari provinsi..." />
         <select id="filter-prov">
           <option value="ALL">Semua Provinsi</option>
         </select>
       </div>
       <div class="filter-group">
         <label class="filter-label" for="filter-kota">Kota Minat Penempatan</label>
+        <input id="search-kota" class="filter-search" placeholder="Cari kota..." />
         <select id="filter-kota" disabled>
           <option value="ALL">Pilih provinsi terlebih dahulu</option>
         </select>
       </div>
       <div class="filter-group">
         <label class="filter-label" for="filter-cycle">Cycle Hired</label>
+        <input id="search-cycle" class="filter-search" placeholder="Cari cycle..." />
         <select id="filter-cycle">
           <option value="ALL">Semua Cycle</option>
         </select>
       </div>
       <div class="filter-group">
         <label class="filter-label" for="filter-periode">Periode Pelamar</label>
+        <input id="search-periode" class="filter-search" placeholder="Cari periode..." />
         <select id="filter-periode">
           <option value="ALL">Semua Periode</option>
         </select>
@@ -367,7 +448,7 @@
     </div>
 
     <div class="filter-hint">
-      * Kota minat muncul setelah memilih provinsi. Filter mempengaruhi seluruh tabel di bawah.
+      * Setiap filter bisa diketik untuk mencari opsi. Filter bisa dipakai bersamaan (multiple filter).
     </div>
 
     <div id="load-state" class="loading">
@@ -377,8 +458,62 @@
     <div id="error-state" class="error" style="display:none;"></div>
   </section>
 
+  <!-- SUMMARY BOXES -->
+  <section class="summary-row">
+    <div class="summary-card male">
+      <div class="summary-header">
+        <div class="summary-title">Summary Pria</div>
+        <div class="summary-tag">Jenis Kelamin: L</div>
+      </div>
+      <div class="summary-body">
+        <div class="summary-metric">
+          <div class="summary-label">Applicant Valid</div>
+          <div id="sum-male-valid" class="summary-value">0</div>
+        </div>
+        <div class="summary-metric">
+          <div class="summary-label">Buffer</div>
+          <div id="sum-male-buffer" class="summary-value">0</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="summary-card female">
+      <div class="summary-header">
+        <div class="summary-title">Summary Wanita</div>
+        <div class="summary-tag">Jenis Kelamin: P</div>
+      </div>
+      <div class="summary-body">
+        <div class="summary-metric">
+          <div class="summary-label">Applicant Valid</div>
+          <div id="sum-female-valid" class="summary-value">0</div>
+        </div>
+        <div class="summary-metric">
+          <div class="summary-label">Buffer</div>
+          <div id="sum-female-buffer" class="summary-value">0</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="summary-card total">
+      <div class="summary-header">
+        <div class="summary-title">Total Nasional</div>
+        <div class="summary-tag">Semua gender</div>
+      </div>
+      <div class="summary-body">
+        <div class="summary-metric">
+          <div class="summary-label">Applicant Valid</div>
+          <div id="sum-total-valid" class="summary-value">0</div>
+        </div>
+        <div class="summary-metric">
+          <div class="summary-label">Buffer</div>
+          <div id="sum-total-buffer" class="summary-value">0</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- TABEL 1 & 2 -->
   <section class="grid">
-    <!-- Tabel 1: Provinsi -->
     <article class="card">
       <div class="card-title-row">
         <div class="card-title">Preview Applicant Valid X Buffer</div>
@@ -408,7 +543,6 @@
       </div>
     </article>
 
-    <!-- Tabel 2: Metode Sourcing -->
     <article class="card">
       <div class="card-title-row">
         <div class="card-title">Preview Metode Sourcing</div>
@@ -439,8 +573,8 @@
     </article>
   </section>
 
+  <!-- TABEL 3 & 4 -->
   <section class="grid">
-    <!-- Tabel 3: Media Sosial -->
     <article class="card">
       <div class="card-title-row">
         <div class="card-title">Preview Sourcing Media Sosial</div>
@@ -466,11 +600,10 @@
           <span class="status-dot"></span>
           <span id="status-media">Menunggu data...</span>
         </div>
-        <div class="status-right">Sumber: kolom SUMBER MEDIA SOSIAL</div>
+        <div class="status-right">Sumber: kata kunci platform di baris data</div>
       </div>
     </article>
 
-    <!-- Tabel 4: Profiling Applicant (Pendidikan) -->
     <article class="card">
       <div class="card-title-row">
         <div class="card-title">Preview Profiling Applicant</div>
@@ -503,19 +636,19 @@
 </div>
 
 <script>
-  /******************** KONFIGURASI ********************/
+  /********** KONFIGURASI **********/
   const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ1IRy6uulUDdZtEV05QNMrse9vdqLTn_NDDoi-KgYTkEBV44HZAqAZHqgOQ6m4FwZ59kcQxHm3elhT/pub?gid=1347000673&single=true&output=csv";
 
   const COL_PROV      = "PROVINSI MINAT PENEMPATAN";
   const COL_KOTA      = "KOTA MINAT PENEMPATAN";
   const COL_CYCLE     = "CYCLE HIRED";
   const COL_PERIODE   = "PERIODE PELAMAR";
-  const COL_KATEGORI  = "KATEGORI APP";      // kolom AC
-  const COL_QUALIFIED = "QUALIFIED";         // kolom AD, isi "YES"
-
-  const COL_METODE    = "METODE SOURCING";       // kalau beda, ganti sesuai header di sheet
-  const COL_MEDIA     = "SUMBER MEDIA SOSIAL";   // kalau beda, ganti sesuai header di sheet
+  const COL_KATEGORI  = "KATEGORI APP";
+  const COL_QUALIFIED = "QUALIFIED";
+  const COL_METODE    = "METODE SOURCING";
+  const COL_MEDIA_PREF= "SUMBER MEDIA SOSIAL";   // nama prefer, nanti auto-detect kalau beda
   const COL_EDU       = "PENDIDIKAN TERAKHIR";
+  const COL_GENDER    = "JENIS KELAMIN";
 
   const KATEGORI_VALID_TARGET = "APLIKAN VALID - CTC 1";
 
@@ -540,8 +673,9 @@
 
   const FIXED_EDU_LIST = ["SMP","SMA / SMK","D1","D2","D3","D4","S1","S2","S3"];
 
-  /*********************** STATE ***********************/
+  /********** STATE **********/
   let rawRows = [];
+  let DETECTED_COL_MEDIA = COL_MEDIA_PREF;
   const provKotaMap = new Map();
 
   const $ = id => document.getElementById(id);
@@ -558,10 +692,10 @@
 
   function uniqueSorted(list){
     return Array.from(new Set(list.filter(Boolean)))
-      .sort((a,b)=>String(a).localeCompare(String(b),'id'));
+      .sort((a,b)=>String(a).localeCompare(String(b),"id"));
   }
 
-  /*********** BUILD PROV-KOTA MAP UNTUK FILTER ***********/
+  /********** PROV-KOTA MAP **********/
   function buildProvKotaMap(){
     provKotaMap.clear();
     rawRows.forEach(row=>{
@@ -593,6 +727,11 @@
 
     fillSelect("filter-cycle",cycleVals,"Semua Cycle");
     fillSelect("filter-periode",periodeVals,"Semua Periode");
+
+    attachSearchToSelect("search-prov","filter-prov");
+    attachSearchToSelect("search-kota","filter-kota");
+    attachSearchToSelect("search-cycle","filter-cycle");
+    attachSearchToSelect("search-periode","filter-periode");
   }
 
   function fillSelect(id,values,placeholder){
@@ -662,7 +801,7 @@
     });
   }
 
-  /************* AGGREGATE PROV & EDU (FIX LIST) *************/
+  /********** AGGREGATE FIXED LIST (PROV & EDU) **********/
   function aggregateByFixedList(rows,dimCol,fixedList){
     const result = fixedList.map(name=>({name,valid:0,buffer:0}));
     const idxMap = new Map();
@@ -686,7 +825,7 @@
     return result;
   }
 
-  /************* AGGREGATE METODE (SMART LOGIC) *************/
+  /********** AGGREGATE METODE (OFFLINE / ONLINE) **********/
   function aggregateMetodeSmart(rows){
     const buckets = {
       "OFFLINE": {name:"OFFLINE",valid:0,buffer:0},
@@ -696,8 +835,8 @@
 
     rows.forEach(row=>{
       const textMetode = norm(row[COL_METODE]);
-      const textMedia  = norm(row[COL_MEDIA]);
-      const text = textMetode || textMedia;
+      const textMedia  = norm(row[DETECTED_COL_MEDIA]);
+      const text = (textMetode + " " + textMedia).trim();
       if(!text) return;
 
       let key = null;
@@ -729,7 +868,7 @@
     ];
   }
 
-  /************* AGGREGATE MEDIA SOSIAL (SMART) *************/
+  /********** AGGREGATE MEDIA SOSIAL (SCAN BARIS) **********/
   function aggregateMediaSmart(rows){
     const map = new Map();
     FIXED_MEDIA_LIST.forEach(name=>{
@@ -738,8 +877,8 @@
 
     const tokenMap = [
       {token:"FACEBOOK",label:"Facebook"},
-      {token:" FB ",label:"Facebook"},
-      {token:"FLK",label:"FLK"},
+      {token:" FLK",label:"FLK"},
+      {token:"FLK ",label:"FLK"},
       {token:"GLINTS",label:"Glints"},
       {token:"HIRED TODAY",label:"Hired Today"},
       {token:"INDEED",label:"Indeed"},
@@ -757,7 +896,14 @@
     ];
 
     rows.forEach(row=>{
-      const text = norm(row[COL_MEDIA]);
+      // gabungkan teks dari kolom media + metode + kolom lain sebagai backup
+      const parts = [];
+      if(row[DETECTED_COL_MEDIA] !== undefined) parts.push(row[DETECTED_COL_MEDIA]);
+      if(row[COL_METODE] !== undefined) parts.push(row[COL_METODE]);
+      // backup: gabungkan seluruh nilai row
+      parts.push(Object.values(row).join(" "));
+
+      const text = norm(parts.join(" | "));
       if(!text) return;
 
       let label = null;
@@ -779,7 +925,7 @@
     return FIXED_MEDIA_LIST.map(name=>map.get(name));
   }
 
-  /******************* RENDER TABLE + TOTAL *******************/
+  /********** RENDER TABLE + GRAND TOTAL **********/
   function renderTable(tbodyId,rows,totalLabel){
     const tbody = $(tbodyId);
     tbody.innerHTML = "";
@@ -837,38 +983,88 @@
     return {grandValid,grandBuffer};
   }
 
-  /********************** UPDATE DASHBOARD **********************/
+  /********** SUMMARY (PRIA / WANITA / TOTAL) **********/
+  function updateSummary(filtered){
+    let totalValid = 0;
+    let totalBuffer = 0;
+    let maleValid = 0, maleBuffer = 0;
+    let femaleValid = 0, femaleBuffer = 0;
+
+    filtered.forEach(row=>{
+      const valid = getApplicantValidValue(row[COL_KATEGORI]);
+      const buffer = isQualifiedYes(row[COL_QUALIFIED]) ? 1 : 0;
+      if(valid) totalValid += valid;
+      if(buffer) totalBuffer += buffer;
+
+      const g = norm(row[COL_GENDER]);
+      if(g.includes("LAKI") || g === "L" || g === "PRIA"){
+        maleValid += valid;
+        maleBuffer += buffer;
+      } else if(g.includes("PEREMPUAN") || g === "P" || g === "WANITA"){
+        femaleValid += valid;
+        femaleBuffer += buffer;
+      }
+    });
+
+    $("sum-male-valid").textContent   = numberFmt.format(maleValid);
+    $("sum-male-buffer").textContent  = numberFmt.format(maleBuffer);
+    $("sum-female-valid").textContent = numberFmt.format(femaleValid);
+    $("sum-female-buffer").textContent= numberFmt.format(femaleBuffer);
+    $("sum-total-valid").textContent  = numberFmt.format(totalValid);
+    $("sum-total-buffer").textContent = numberFmt.format(totalBuffer);
+
+    return {totalValid,totalBuffer};
+  }
+
+  /********** UPDATE SEMUA TABEL **********/
   function updateAllTables(){
     const filtered = getFilteredRows();
     const totalRows = filtered.length;
 
-    // Tabel 1: Provinsi
-    const provAgg = aggregateByFixedList(filtered,COL_PROV,FIXED_PROV_LIST);
+    const national = updateSummary(filtered);
+
+    const provAgg   = aggregateByFixedList(filtered,COL_PROV,FIXED_PROV_LIST);
     const totalProv = renderTable("tbl-prov-body",provAgg,"GRAND TOTAL PROVINSI");
     $("status-prov").textContent =
       `Ditampilkan ${provAgg.length} provinsi · ${numberFmt.format(totalRows)} baris terfilter · ` +
       `Grand Total Valid: ${numberFmt.format(totalProv.grandValid)}, Buffer: ${numberFmt.format(totalProv.grandBuffer)}`;
 
-    // Tabel 2: Metode Sourcing
     const metodeAgg = aggregateMetodeSmart(filtered);
     const totalMetode = renderTable("tbl-metode-body",metodeAgg,"GRAND TOTAL METODE");
     $("status-metode").textContent =
       `Ditampilkan ${metodeAgg.length} metode · ${numberFmt.format(totalRows)} baris terfilter · ` +
       `Grand Total Valid: ${numberFmt.format(totalMetode.grandValid)}, Buffer: ${numberFmt.format(totalMetode.grandBuffer)}`;
 
-    // Tabel 3: Media Sosial
     const mediaAgg = aggregateMediaSmart(filtered);
     const totalMedia = renderTable("tbl-media-body",mediaAgg,"GRAND TOTAL MEDIA");
     $("status-media").textContent =
       `Ditampilkan ${mediaAgg.length} media · ${numberFmt.format(totalRows)} baris terfilter · ` +
       `Grand Total Valid: ${numberFmt.format(totalMedia.grandValid)}, Buffer: ${numberFmt.format(totalMedia.grandBuffer)}`;
 
-    // Tabel 4: Pendidikan
     const eduAgg = aggregateByFixedList(filtered,COL_EDU,FIXED_EDU_LIST);
     const totalEdu = renderTable("tbl-edu-body",eduAgg,"GRAND TOTAL PENDIDIKAN");
     $("status-edu").textContent =
       `Ditampilkan ${eduAgg.length} level pendidikan · ${numberFmt.format(totalRows)} baris terfilter · ` +
       `Grand Total Valid: ${numberFmt.format(totalEdu.grandValid)}, Buffer: ${numberFmt.format(totalEdu.grandBuffer)}`;
+
+    // catatan: kalau ada sedikit beda angka antar tabel,
+    // biasanya karena ada baris yang tidak punya provinsi / pendidikan / media yang sesuai list fix.
+  }
+
+  /********** FILTER EVENTS & SEARCH BOX **********/
+  function attachSearchToSelect(inputId,selectId){
+    const input = $(inputId);
+    const select = $(selectId);
+    if(!input || !select) return;
+
+    input.addEventListener("input",()=>{
+      const term = input.value.toLowerCase();
+      Array.from(select.options).forEach((opt,idx)=>{
+        if(idx===0){ opt.hidden = false; return; } // opsi "ALL" selalu tampil
+        const text = opt.textContent.toLowerCase();
+        opt.hidden = term && !text.includes(term);
+      });
+    });
   }
 
   function attachFilterEvents(){
@@ -881,7 +1077,21 @@
     });
   }
 
-  /************************ LOAD CSV ************************/
+  /********** DETECT KOLUMN MEDIA OTOMATIS **********/
+  function detectMediaColumn(fields){
+    if(!fields || !fields.length) return COL_MEDIA_PREF;
+    const preferredNorm = norm(COL_MEDIA_PREF);
+    let found = fields.find(f=>norm(f)===preferredNorm);
+    if(found) return found;
+
+    const candidates = fields.filter(f=>{
+      const s = norm(f);
+      return s.includes("MEDIA") || s.includes("SOSIAL") || s.includes("SUMBER");
+    });
+    return candidates[0] || COL_MEDIA_PREF;
+  }
+
+  /********** LOAD CSV **********/
   async function loadCsv(){
     $("error-state").style.display = "none";
     $("load-state").style.display = "flex";
@@ -893,6 +1103,7 @@
 
       const parsed = Papa.parse(text,{header:true,skipEmptyLines:true});
       rawRows = parsed.data || [];
+      DETECTED_COL_MEDIA = detectMediaColumn(parsed.meta && parsed.meta.fields);
 
       $("load-state").style.display = "none";
 
