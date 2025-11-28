@@ -248,6 +248,15 @@
       color:var(--muted);
     }
 
+    .total-row{
+      background:#111827;
+      color:#f9fafb;
+      font-weight:700;
+    }
+    .total-row .col-label{
+      color:#f9fafb;
+    }
+
     .status-bar{
       display:flex;
       align-items:center;
@@ -374,7 +383,7 @@
         <div class="card-tag">By Provinsi Minat Penempatan</div>
       </div>
       <p class="card-subtext">
-        Ringkasan jumlah Applicant Valid dan Buffer per provinsi minat penempatan.
+        Ringkasan jumlah Applicant Valid (APLIKAN VALID - CTC 1) dan Buffer per provinsi minat penempatan.
       </p>
       <div class="table-wrap">
         <table>
@@ -395,7 +404,7 @@
           <span class="status-dot"></span>
           <span id="status-prov">Menunggu data...</span>
         </div>
-        <div class="status-right">AC: KATEGORI APP · AD: QUALIFIED = "YES"</div>
+        <div class="status-right">KATEGORI APP = "APLIKAN VALID - CTC 1" · QUALIFIED = "YES"</div>
       </div>
     </article>
 
@@ -406,7 +415,7 @@
         <div class="card-tag">Offline vs Online</div>
       </div>
       <p class="card-subtext">
-        Distribusi Applicant Valid dan Buffer berdasarkan metode sourcing.
+        Distribusi Applicant Valid (APLIKAN VALID - CTC 1) dan Buffer berdasarkan metode sourcing.
       </p>
       <div class="table-wrap">
         <table>
@@ -427,7 +436,7 @@
           <span class="status-dot"></span>
           <span id="status-metode">Menunggu data...</span>
         </div>
-        <div class="status-right">Sumber: kolom metode sourcing</div>
+        <div class="status-right">Sumber: kolom METODE SOURCING</div>
       </div>
     </article>
   </section>
@@ -440,7 +449,7 @@
         <div class="card-tag">Per Platform</div>
       </div>
       <p class="card-subtext">
-        Breakdown Applicant Valid &amp; Buffer dari masing-masing media sosial.
+        Breakdown Applicant Valid (APLIKAN VALID - CTC 1) &amp; Buffer dari masing-masing media sosial.
       </p>
       <div class="table-wrap">
         <table>
@@ -461,7 +470,7 @@
           <span class="status-dot"></span>
           <span id="status-media">Menunggu data...</span>
         </div>
-        <div class="status-right">Sumber: kolom sumber media sosial</div>
+        <div class="status-right">Sumber: kolom SUMBER MEDIA SOSIAL</div>
       </div>
     </article>
 
@@ -472,7 +481,7 @@
         <div class="card-tag">Tingkat Pendidikan</div>
       </div>
       <p class="card-subtext">
-        Gambaran level pendidikan applicant yang masuk dan qualified sebagai buffer.
+        Gambaran level pendidikan applicant yang berstatus APLIKAN VALID - CTC 1 dan qualified sebagai buffer.
       </p>
       <div class="table-wrap">
         <table>
@@ -493,7 +502,7 @@
           <span class="status-dot"></span>
           <span id="status-edu">Menunggu data...</span>
         </div>
-        <div class="status-right">Sumber: kolom pendidikan terakhir</div>
+        <div class="status-right">Sumber: kolom PENDIDIKAN TERAKHIR</div>
       </div>
     </article>
   </section>
@@ -513,12 +522,13 @@
   const COL_KATEGORI  = "KATEGORI APP";      // kolom AC
   const COL_QUALIFIED = "QUALIFIED";         // kolom AD, isi "YES"
 
-  // Untuk tabel 2,3,4: silakan sesuaikan jika header berbeda
-  const COL_METODE    = "METODE SOURCING";   // contoh: OFFLINE, ONLINE - MEDIA SOSIAL, ONLINE - JOB PORTAL
-  const COL_MEDIA     = "SUMBER MEDIA SOSIAL"; // contoh: Facebook, JobStreet, dll
+  const COL_METODE    = "METODE SOURCING";       // contoh: OFFLINE, ONLINE - MEDIA SOSIAL, ONLINE - JOB PORTAL
+  const COL_MEDIA     = "SUMBER MEDIA SOSIAL";   // contoh: Facebook, JobStreet, dll
   const COL_EDU       = "PENDIDIKAN TERAKHIR";
 
-  // Daftar provinsi fix, sesuai permintaan (tabel 1)
+  const KATEGORI_VALID_TARGET = "APLIKAN VALID - CTC 1";
+
+  // Daftar provinsi fix
   const FIXED_PROV_LIST = [
     "ACEH (NAD)",
     "BALI",
@@ -605,19 +615,14 @@
 
   const numberFmt = new Intl.NumberFormat('id-ID',{maximumFractionDigits:0});
 
+  // Applicant Valid = hitung baris dengan KATEGORI APP == "APLIKAN VALID - CTC 1"
   function getApplicantValidValue(raw){
     if(raw === null || raw === undefined) return 0;
-    const str = String(raw).trim();
-    if(!str) return 0;
-    const num = parseFloat(str.replace(",","."));
-    if(!isNaN(num)) return num;
-
-    // fallback jika berupa teks
-    const upper = str.toUpperCase();
-    if(upper === "VALID" || upper === "APPLICANT VALID" || upper === "YES" || upper === "YA") return 1;
-    return 0;
+    const str = String(raw).trim().toUpperCase();
+    return str === KATEGORI_VALID_TARGET.toUpperCase() ? 1 : 0;
   }
 
+  // Buffer = hitung baris dengan QUALIFIED == "YES"
   function isQualifiedYes(raw){
     if(raw === null || raw === undefined) return false;
     const str = String(raw).trim().toUpperCase();
@@ -687,18 +692,24 @@
       const idx = indexByName.get(String(key));
       if(idx === undefined) return;
 
+      // Applicant Valid
       const validVal = getApplicantValidValue(row[COL_KATEGORI]);
       if(validVal) result[idx].valid += validVal;
 
+      // Buffer
       if(isQualifiedYes(row[COL_QUALIFIED])) result[idx].buffer += 1;
     });
 
     return result;
   }
 
-  function renderTable(tbodyId, rows){
+  // render table + GRAND TOTAL
+  function renderTable(tbodyId, rows, totalLabel="TOTAL"){
     const tbody = $(tbodyId);
     tbody.innerHTML = "";
+
+    let grandValid = 0;
+    let grandBuffer = 0;
 
     rows.forEach(r=>{
       const tr = document.createElement("tr");
@@ -722,7 +733,33 @@
       tr.appendChild(tdValid);
       tr.appendChild(tdBuffer);
       tbody.appendChild(tr);
+
+      grandValid += (r.valid || 0);
+      grandBuffer += (r.buffer || 0);
     });
+
+    // Baris GRAND TOTAL
+    const trTotal = document.createElement("tr");
+    trTotal.className = "total-row";
+
+    const tdLabelTotal = document.createElement("td");
+    tdLabelTotal.textContent = totalLabel;
+    tdLabelTotal.className = "col-label";
+
+    const tdValidTotal = document.createElement("td");
+    tdValidTotal.textContent = numberFmt.format(grandValid);
+    tdValidTotal.className = "col-number";
+
+    const tdBufferTotal = document.createElement("td");
+    tdBufferTotal.textContent = numberFmt.format(grandBuffer);
+    tdBufferTotal.className = "col-number";
+
+    trTotal.appendChild(tdLabelTotal);
+    trTotal.appendChild(tdValidTotal);
+    trTotal.appendChild(tdBufferTotal);
+    tbody.appendChild(trTotal);
+
+    return {grandValid, grandBuffer};
   }
 
   function updateAllTables(){
@@ -731,23 +768,31 @@
 
     // Tabel 1: Provinsi
     const provAgg = aggregateByFixedList(filtered, COL_PROV, FIXED_PROV_LIST);
-    renderTable("tbl-prov-body", provAgg);
-    $("status-prov").textContent = `Ditampilkan ${provAgg.length} provinsi · ${numberFmt.format(totalRows)} baris terfilter`;
+    const totalProv = renderTable("tbl-prov-body", provAgg, "TOTAL PROVINSI");
+    $("status-prov").textContent =
+      `Ditampilkan ${provAgg.length} provinsi · ${numberFmt.format(totalRows)} baris terfilter · ` +
+      `Grand Total Valid: ${numberFmt.format(totalProv.grandValid)}, Buffer: ${numberFmt.format(totalProv.grandBuffer)}`;
 
     // Tabel 2: Metode sourcing
     const metodeAgg = aggregateByFixedList(filtered, COL_METODE, FIXED_METODE_LIST);
-    renderTable("tbl-metode-body", metodeAgg);
-    $("status-metode").textContent = `Ditampilkan ${metodeAgg.length} metode · ${numberFmt.format(totalRows)} baris terfilter`;
+    const totalMetode = renderTable("tbl-metode-body", metodeAgg, "TOTAL METODE");
+    $("status-metode").textContent =
+      `Ditampilkan ${metodeAgg.length} metode · ${numberFmt.format(totalRows)} baris terfilter · ` +
+      `Grand Total Valid: ${numberFmt.format(totalMetode.grandValid)}, Buffer: ${numberFmt.format(totalMetode.grandBuffer)}`;
 
     // Tabel 3: Media sosial
     const mediaAgg = aggregateByFixedList(filtered, COL_MEDIA, FIXED_MEDIA_LIST);
-    renderTable("tbl-media-body", mediaAgg);
-    $("status-media").textContent = `Ditampilkan ${mediaAgg.length} media · ${numberFmt.format(totalRows)} baris terfilter`;
+    const totalMedia = renderTable("tbl-media-body", mediaAgg, "TOTAL MEDIA");
+    $("status-media").textContent =
+      `Ditampilkan ${mediaAgg.length} media · ${numberFmt.format(totalRows)} baris terfilter · ` +
+      `Grand Total Valid: ${numberFmt.format(totalMedia.grandValid)}, Buffer: ${numberFmt.format(totalMedia.grandBuffer)}`;
 
     // Tabel 4: Pendidikan
     const eduAgg = aggregateByFixedList(filtered, COL_EDU, FIXED_EDU_LIST);
-    renderTable("tbl-edu-body", eduAgg);
-    $("status-edu").textContent = `Ditampilkan ${eduAgg.length} level pendidikan · ${numberFmt.format(totalRows)} baris terfilter`;
+    const totalEdu = renderTable("tbl-edu-body", eduAgg, "TOTAL PENDIDIKAN");
+    $("status-edu").textContent =
+      `Ditampilkan ${eduAgg.length} level pendidikan · ${numberFmt.format(totalRows)} baris terfilter · ` +
+      `Grand Total Valid: ${numberFmt.format(totalEdu.grandValid)}, Buffer: ${numberFmt.format(totalEdu.grandBuffer)}`;
   }
 
   function attachFilterEvents(){
