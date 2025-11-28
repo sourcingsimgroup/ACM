@@ -1,0 +1,804 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Applicant Cycle Management</title>
+
+  <!-- Font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- PapaParse untuk parsing CSV -->
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+
+  <style>
+    :root{
+      --bg:#f5f7fb;
+      --card:#ffffff;
+      --ink:#111827;
+      --muted:#6b7280;
+      --brand:#2563eb;
+      --brand-soft:#e0edff;
+      --line:#e5e7eb;
+      --radius:18px;
+      --shadow:0 18px 40px rgba(15,23,42,0.08);
+    }
+
+    *{box-sizing:border-box;margin:0;padding:0}
+    html,body{
+      width:100%;
+      min-height:100%;
+      font-family:'Montserrat',system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+      background: radial-gradient(circle at top left,#e0edff 0,#f5f7fb 40%,#f5f7fb 100%);
+      color:var(--ink);
+    }
+
+    body{
+      display:flex;
+      justify-content:center;
+      padding:16px;
+    }
+
+    .app-shell{
+      width:100%;
+      max-width:1240px;
+      background:transparent;
+    }
+
+    header{
+      display:flex;
+      flex-wrap:wrap;
+      gap:12px;
+      justify-content:space-between;
+      align-items:flex-start;
+      margin-bottom:18px;
+    }
+
+    .title-block h1{
+      font-size:1.6rem;
+      font-weight:700;
+      letter-spacing:0.02em;
+      color:var(--ink);
+    }
+    .title-block p{
+      margin-top:4px;
+      font-size:0.9rem;
+      color:var(--muted);
+    }
+
+    .pill{
+      padding:8px 14px;
+      background:rgba(37,99,235,0.06);
+      border-radius:999px;
+      font-size:0.8rem;
+      color:var(--brand);
+      font-weight:600;
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+    }
+
+    .pill-dot{
+      width:8px;
+      height:8px;
+      border-radius:999px;
+      background:var(--brand);
+      box-shadow:0 0 0 4px rgba(37,99,235,0.18);
+    }
+
+    .card{
+      background:var(--card);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      padding:18px 18px 16px;
+      border:1px solid rgba(148,163,184,0.18);
+    }
+
+    .filter-card{
+      margin-bottom:18px;
+    }
+
+    .filters{
+      display:grid;
+      grid-template-columns:repeat(4,minmax(0,1fr));
+      gap:12px;
+      margin-top:10px;
+    }
+
+    @media (max-width:1024px){
+      .filters{grid-template-columns:repeat(2,minmax(0,1fr));}
+    }
+    @media (max-width:640px){
+      .filters{grid-template-columns:1fr;}
+      header{gap:8px;}
+      .title-block h1{font-size:1.3rem;}
+    }
+
+    .filter-group{
+      display:flex;
+      flex-direction:column;
+      gap:5px;
+      font-size:0.8rem;
+    }
+
+    .filter-label{
+      font-weight:600;
+      color:var(--muted);
+    }
+
+    select{
+      padding:8px 10px;
+      border-radius:999px;
+      border:1px solid var(--line);
+      font-size:0.8rem;
+      outline:none;
+      background:#f9fafb;
+      color:var(--ink);
+      transition:border-color 0.18s, box-shadow 0.18s, background 0.18s;
+    }
+    select:focus{
+      border-color:var(--brand);
+      box-shadow:0 0 0 3px rgba(37,99,235,0.18);
+      background:#ffffff;
+    }
+
+    .filter-hint{
+      margin-top:8px;
+      font-size:0.75rem;
+      color:var(--muted);
+    }
+
+    .grid{
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:16px;
+      margin-bottom:12px;
+    }
+    @media (max-width:960px){
+      .grid{grid-template-columns:1fr;}
+    }
+
+    .card-title-row{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      margin-bottom:8px;
+      gap:8px;
+    }
+
+    .card-title{
+      font-size:0.95rem;
+      font-weight:600;
+    }
+
+    .card-tag{
+      font-size:0.7rem;
+      padding:4px 10px;
+      border-radius:999px;
+      background:var(--brand-soft);
+      color:var(--brand);
+      font-weight:600;
+      white-space:nowrap;
+    }
+
+    .card-subtext{
+      font-size:0.75rem;
+      color:var(--muted);
+      margin-bottom:8px;
+    }
+
+    .table-wrap{
+      width:100%;
+      overflow-x:auto;
+      border-radius:12px;
+      border:1px solid var(--line);
+      background:#f9fafb;
+    }
+
+    table{
+      width:100%;
+      border-collapse:collapse;
+      font-size:0.78rem;
+      min-width:360px;
+    }
+
+    thead{
+      background:#111827;
+      color:#f9fafb;
+    }
+
+    th,td{
+      padding:7px 10px;
+      text-align:left;
+      border-bottom:1px solid var(--line);
+      white-space:nowrap;
+    }
+
+    thead th:first-child{
+      border-top-left-radius:12px;
+    }
+    thead th:last-child{
+      border-top-right-radius:12px;
+    }
+
+    tbody tr:nth-child(even){
+      background:#f3f4f6;
+    }
+
+    tbody tr:last-child td:first-child{
+      border-bottom-left-radius:12px;
+    }
+    tbody tr:last-child td:last-child{
+      border-bottom-right-radius:12px;
+    }
+
+    .col-label{
+      font-weight:600;
+      color:#111827;
+    }
+
+    .col-number{
+      text-align:right;
+      font-variant-numeric:tabular-nums;
+    }
+
+    .muted-row{
+      color:var(--muted);
+    }
+
+    .status-bar{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      margin:4px 2px 0;
+      font-size:0.72rem;
+      color:var(--muted);
+    }
+
+    .status-left{
+      display:flex;
+      align-items:center;
+      gap:6px;
+    }
+
+    .status-dot{
+      width:8px;
+      height:8px;
+      border-radius:999px;
+      background:#22c55e;
+      box-shadow:0 0 0 3px rgba(34,197,94,0.3);
+    }
+
+    .status-right{
+      font-style:italic;
+    }
+
+    .loading{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      font-size:0.8rem;
+      color:var(--muted);
+      margin-top:6px;
+    }
+
+    .spinner{
+      width:14px;
+      height:14px;
+      border-radius:999px;
+      border:2px solid rgba(37,99,235,0.18);
+      border-top-color:var(--brand);
+      animation:spin 0.7s linear infinite;
+    }
+
+    @keyframes spin{
+      to{transform:rotate(360deg);}
+    }
+
+    .error{
+      margin-top:8px;
+      font-size:0.8rem;
+      color:#b91c1c;
+    }
+  </style>
+</head>
+<body>
+<div class="app-shell">
+  <header>
+    <div class="title-block">
+      <h1>Applicant Cycle Management</h1>
+      <p>Preview analisa Applicant Valid &amp; Buffer berdasarkan provinsi, metode sourcing, media sosial, dan pendidikan.</p>
+    </div>
+    <div class="title-right">
+      <span class="pill">
+        <span class="pill-dot"></span>
+        Dashboard preview &mdash; data dari sheet <strong>Responses</strong>
+      </span>
+    </div>
+  </header>
+
+  <section class="card filter-card">
+    <div class="card-title-row">
+      <div class="card-title">Filter Data Applicant</div>
+      <div class="card-tag">Live from Google Sheets CSV</div>
+    </div>
+    <div class="card-subtext">
+      Sesuaikan filter di bawah untuk melihat preview analisa. Kosongkan filter (Semua) untuk menampilkan keseluruhan.
+    </div>
+
+    <div class="filters">
+      <div class="filter-group">
+        <label class="filter-label" for="filter-prov">Provinsi Minat Penempatan</label>
+        <select id="filter-prov">
+          <option value="ALL">Semua Provinsi</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label class="filter-label" for="filter-kota">Kota Minat Penempatan</label>
+        <select id="filter-kota">
+          <option value="ALL">Semua Kota</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label class="filter-label" for="filter-cycle">Cycle Hired</label>
+        <select id="filter-cycle">
+          <option value="ALL">Semua Cycle</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label class="filter-label" for="filter-periode">Periode Pelamar</label>
+        <select id="filter-periode">
+          <option value="ALL">Semua Periode</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="filter-hint">
+      * Filter ini hanya mempengaruhi perhitungan tabel preview di bawah.
+    </div>
+
+    <div id="load-state" class="loading">
+      <div class="spinner"></div>
+      <span>Memuat data dari Google Sheets...</span>
+    </div>
+    <div id="error-state" class="error" style="display:none;"></div>
+  </section>
+
+  <section class="grid">
+    <!-- Tabel 1: Provinsi -->
+    <article class="card">
+      <div class="card-title-row">
+        <div class="card-title">Preview Applicant Valid X Buffer</div>
+        <div class="card-tag">By Provinsi Minat Penempatan</div>
+      </div>
+      <p class="card-subtext">
+        Ringkasan jumlah Applicant Valid dan Buffer per provinsi minat penempatan.
+      </p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+          <tr>
+            <th>Provinsi</th>
+            <th>Applicant Valid</th>
+            <th>Buffer</th>
+          </tr>
+          </thead>
+          <tbody id="tbl-prov-body">
+          <!-- rows injected by JS -->
+          </tbody>
+        </table>
+      </div>
+      <div class="status-bar">
+        <div class="status-left">
+          <span class="status-dot"></span>
+          <span id="status-prov">Menunggu data...</span>
+        </div>
+        <div class="status-right">AC: KATEGORI APP · AD: QUALIFIED = "YES"</div>
+      </div>
+    </article>
+
+    <!-- Tabel 2: Metode Sourcing -->
+    <article class="card">
+      <div class="card-title-row">
+        <div class="card-title">Preview Metode Sourcing</div>
+        <div class="card-tag">Offline vs Online</div>
+      </div>
+      <p class="card-subtext">
+        Distribusi Applicant Valid dan Buffer berdasarkan metode sourcing.
+      </p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+          <tr>
+            <th>Metode Sourcing</th>
+            <th>Applicant Valid</th>
+            <th>Buffer</th>
+          </tr>
+          </thead>
+          <tbody id="tbl-metode-body">
+          <!-- rows injected by JS -->
+          </tbody>
+        </table>
+      </div>
+      <div class="status-bar">
+        <div class="status-left">
+          <span class="status-dot"></span>
+          <span id="status-metode">Menunggu data...</span>
+        </div>
+        <div class="status-right">Sumber: kolom metode sourcing</div>
+      </div>
+    </article>
+  </section>
+
+  <section class="grid">
+    <!-- Tabel 3: Media Sosial -->
+    <article class="card">
+      <div class="card-title-row">
+        <div class="card-title">Preview Sourcing Media Sosial</div>
+        <div class="card-tag">Per Platform</div>
+      </div>
+      <p class="card-subtext">
+        Breakdown Applicant Valid &amp; Buffer dari masing-masing media sosial.
+      </p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+          <tr>
+            <th>Media Sosial</th>
+            <th>Applicant Valid</th>
+            <th>Buffer</th>
+          </tr>
+          </thead>
+          <tbody id="tbl-media-body">
+          <!-- rows injected by JS -->
+          </tbody>
+        </table>
+      </div>
+      <div class="status-bar">
+        <div class="status-left">
+          <span class="status-dot"></span>
+          <span id="status-media">Menunggu data...</span>
+        </div>
+        <div class="status-right">Sumber: kolom sumber media sosial</div>
+      </div>
+    </article>
+
+    <!-- Tabel 4: Profiling Applicant (Pendidikan) -->
+    <article class="card">
+      <div class="card-title-row">
+        <div class="card-title">Preview Profiling Applicant</div>
+        <div class="card-tag">Tingkat Pendidikan</div>
+      </div>
+      <p class="card-subtext">
+        Gambaran level pendidikan applicant yang masuk dan qualified sebagai buffer.
+      </p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+          <tr>
+            <th>Pendidikan Terakhir</th>
+            <th>Applicant Valid</th>
+            <th>Buffer</th>
+          </tr>
+          </thead>
+          <tbody id="tbl-edu-body">
+          <!-- rows injected by JS -->
+          </tbody>
+        </table>
+      </div>
+      <div class="status-bar">
+        <div class="status-left">
+          <span class="status-dot"></span>
+          <span id="status-edu">Menunggu data...</span>
+        </div>
+        <div class="status-right">Sumber: kolom pendidikan terakhir</div>
+      </div>
+    </article>
+  </section>
+</div>
+
+<script>
+  /****************************************************
+   * KONFIGURASI
+   ****************************************************/
+  const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ1IRy6uulUDdZtEV05QNMrse9vdqLTn_NDDoi-KgYTkEBV44HZAqAZHqgOQ6m4FwZ59kcQxHm3elhT/pub?gid=1347000673&single=true&output=csv";
+
+  // ⚠️ PENTING: Sesuaikan nama header kolom ini dengan header di sheet "Responses"
+  const COL_PROV      = "PROVINSI MINAT PENEMPATAN";
+  const COL_KOTA      = "KOTA MINAT PENEMPATAN";
+  const COL_CYCLE     = "CYCLE HIRED";
+  const COL_PERIODE   = "PERIODE PELAMAR";
+  const COL_KATEGORI  = "KATEGORI APP";      // kolom AC
+  const COL_QUALIFIED = "QUALIFIED";         // kolom AD, isi "YES"
+
+  // Untuk tabel 2,3,4: silakan sesuaikan jika header berbeda
+  const COL_METODE    = "METODE SOURCING";   // contoh: OFFLINE, ONLINE - MEDIA SOSIAL, ONLINE - JOB PORTAL
+  const COL_MEDIA     = "SUMBER MEDIA SOSIAL"; // contoh: Facebook, JobStreet, dll
+  const COL_EDU       = "PENDIDIKAN TERAKHIR";
+
+  // Daftar provinsi fix, sesuai permintaan (tabel 1)
+  const FIXED_PROV_LIST = [
+    "ACEH (NAD)",
+    "BALI",
+    "BANTEN",
+    "BENGKULU",
+    "DI YOGYAKARTA",
+    "DKI JAKARTA",
+    "GORONTALO",
+    "JAMBI",
+    "JAWA BARAT",
+    "JAWA TENGAH",
+    "JAWA TIMUR",
+    "KALIMANTAN BARAT",
+    "KALIMANTAN SELATAN",
+    "KALIMANTAN TENGAH",
+    "KALIMANTAN TIMUR",
+    "KALIMANTAN UTARA",
+    "KEPULAUAN BANGKA BELITUNG",
+    "KEPULAUAN RIAU",
+    "LAMPUNG",
+    "MALUKU",
+    "MALUKU UTARA",
+    "NUSA TENGGARA BARAT (NTB)",
+    "NUSA TENGGARA TIMUR (NTT)",
+    "PAPUA",
+    "PAPUA BARAT DAYA",
+    "PAPUA SELATAN",
+    "PAPUA TENGAH",
+    "RIAU",
+    "SULAWESI BARAT",
+    "SULAWESI SELATAN",
+    "SULAWESI TENGAH",
+    "SULAWESI TENGGARA",
+    "SULAWESI TIMUR",
+    "SULAWESI UTARA",
+    "SUMATERA BARAT",
+    "SUMATERA SELATAN",
+    "SUMATERA UTARA"
+  ];
+
+  // Tabel 2: Metode sourcing fix
+  const FIXED_METODE_LIST = [
+    "OFFLINE",
+    "ONLINE - MEDIA SOSIAL",
+    "ONLINE - JOB PORTAL"
+  ];
+
+  // Tabel 3: Media Sosial fix
+  const FIXED_MEDIA_LIST = [
+    "Facebook",
+    "FLK",
+    "Glints",
+    "Hired Today",
+    "Indeed",
+    "JobStreet",
+    "Jobstreet Express",
+    "KarirHub",
+    "KitaLulus",
+    "Kupu",
+    "Linkedin",
+    "Lumina",
+    "Pintarnya"
+  ];
+
+  // Tabel 4: Pendidikan fix
+  const FIXED_EDU_LIST = [
+    "SMP",
+    "SMA / SMK",
+    "D1",
+    "D2",
+    "D3",
+    "D4",
+    "S1",
+    "S2",
+    "S3"
+  ];
+
+  /****************************************************
+   * STATE
+   ****************************************************/
+  let rawRows = [];
+
+  const $ = (id) => document.getElementById(id);
+
+  const numberFmt = new Intl.NumberFormat('id-ID',{maximumFractionDigits:0});
+
+  function getApplicantValidValue(raw){
+    if(raw === null || raw === undefined) return 0;
+    const str = String(raw).trim();
+    if(!str) return 0;
+    const num = parseFloat(str.replace(",","."));
+    if(!isNaN(num)) return num;
+
+    // fallback jika berupa teks
+    const upper = str.toUpperCase();
+    if(upper === "VALID" || upper === "APPLICANT VALID" || upper === "YES" || upper === "YA") return 1;
+    return 0;
+  }
+
+  function isQualifiedYes(raw){
+    if(raw === null || raw === undefined) return false;
+    const str = String(raw).trim().toUpperCase();
+    return str === "YES" || str === "YA";
+  }
+
+  function uniqueSorted(list){
+    return Array.from(new Set(list.filter(Boolean))).sort((a,b)=>String(a).localeCompare(String(b),'id'));
+  }
+
+  function initFilters(){
+    const provVals    = uniqueSorted(rawRows.map(r => r[COL_PROV]));
+    const kotaVals    = uniqueSorted(rawRows.map(r => r[COL_KOTA]));
+    const cycleVals   = uniqueSorted(rawRows.map(r => r[COL_CYCLE]));
+    const periodeVals = uniqueSorted(rawRows.map(r => r[COL_PERIODE]));
+
+    fillSelect("filter-prov", provVals, "Semua Provinsi");
+    fillSelect("filter-kota", kotaVals, "Semua Kota");
+    fillSelect("filter-cycle", cycleVals, "Semua Cycle");
+    fillSelect("filter-periode", periodeVals, "Semua Periode");
+  }
+
+  function fillSelect(id, values, placeholder){
+    const sel = $(id);
+    sel.innerHTML = "";
+    const optAll = document.createElement("option");
+    optAll.value = "ALL";
+    optAll.textContent = placeholder;
+    sel.appendChild(optAll);
+
+    values.forEach(v=>{
+      const opt = document.createElement("option");
+      opt.value = v;
+      opt.textContent = v;
+      sel.appendChild(opt);
+    });
+  }
+
+  function getFilteredRows(){
+    const prov    = $("filter-prov").value;
+    const kota    = $("filter-kota").value;
+    const cycle   = $("filter-cycle").value;
+    const periode = $("filter-periode").value;
+
+    return rawRows.filter(row => {
+      if(prov !== "ALL" && String(row[COL_PROV]) !== String(prov)) return false;
+      if(kota !== "ALL" && String(row[COL_KOTA]) !== String(kota)) return false;
+      if(cycle !== "ALL" && String(row[COL_CYCLE]) !== String(cycle)) return false;
+      if(periode !== "ALL" && String(row[COL_PERIODE]) !== String(periode)) return false;
+      return true;
+    });
+  }
+
+  function aggregateByFixedList(rows, dimCol, fixedList){
+    const result = fixedList.map(name => ({
+      name,
+      valid:0,
+      buffer:0
+    }));
+
+    const indexByName = new Map();
+    result.forEach((r,idx)=>indexByName.set(r.name, idx));
+
+    rows.forEach(row=>{
+      const key = row[dimCol];
+      if(!key) return;
+      const idx = indexByName.get(String(key));
+      if(idx === undefined) return;
+
+      const validVal = getApplicantValidValue(row[COL_KATEGORI]);
+      if(validVal) result[idx].valid += validVal;
+
+      if(isQualifiedYes(row[COL_QUALIFIED])) result[idx].buffer += 1;
+    });
+
+    return result;
+  }
+
+  function renderTable(tbodyId, rows){
+    const tbody = $(tbodyId);
+    tbody.innerHTML = "";
+
+    rows.forEach(r=>{
+      const tr = document.createElement("tr");
+      if(r.valid === 0 && r.buffer === 0){
+        tr.classList.add("muted-row");
+      }
+
+      const tdLabel = document.createElement("td");
+      tdLabel.textContent = r.name;
+      tdLabel.className = "col-label";
+
+      const tdValid = document.createElement("td");
+      tdValid.textContent = numberFmt.format(r.valid || 0);
+      tdValid.className = "col-number";
+
+      const tdBuffer = document.createElement("td");
+      tdBuffer.textContent = numberFmt.format(r.buffer || 0);
+      tdBuffer.className = "col-number";
+
+      tr.appendChild(tdLabel);
+      tr.appendChild(tdValid);
+      tr.appendChild(tdBuffer);
+      tbody.appendChild(tr);
+    });
+  }
+
+  function updateAllTables(){
+    const filtered = getFilteredRows();
+    const totalRows = filtered.length;
+
+    // Tabel 1: Provinsi
+    const provAgg = aggregateByFixedList(filtered, COL_PROV, FIXED_PROV_LIST);
+    renderTable("tbl-prov-body", provAgg);
+    $("status-prov").textContent = `Ditampilkan ${provAgg.length} provinsi · ${numberFmt.format(totalRows)} baris terfilter`;
+
+    // Tabel 2: Metode sourcing
+    const metodeAgg = aggregateByFixedList(filtered, COL_METODE, FIXED_METODE_LIST);
+    renderTable("tbl-metode-body", metodeAgg);
+    $("status-metode").textContent = `Ditampilkan ${metodeAgg.length} metode · ${numberFmt.format(totalRows)} baris terfilter`;
+
+    // Tabel 3: Media sosial
+    const mediaAgg = aggregateByFixedList(filtered, COL_MEDIA, FIXED_MEDIA_LIST);
+    renderTable("tbl-media-body", mediaAgg);
+    $("status-media").textContent = `Ditampilkan ${mediaAgg.length} media · ${numberFmt.format(totalRows)} baris terfilter`;
+
+    // Tabel 4: Pendidikan
+    const eduAgg = aggregateByFixedList(filtered, COL_EDU, FIXED_EDU_LIST);
+    renderTable("tbl-edu-body", eduAgg);
+    $("status-edu").textContent = `Ditampilkan ${eduAgg.length} level pendidikan · ${numberFmt.format(totalRows)} baris terfilter`;
+  }
+
+  function attachFilterEvents(){
+    ["filter-prov","filter-kota","filter-cycle","filter-periode"].forEach(id=>{
+      $(id).addEventListener("change", updateAllTables);
+    });
+  }
+
+  async function loadCsv(){
+    $("error-state").style.display = "none";
+    $("load-state").style.display = "flex";
+
+    try{
+      const res = await fetch(CSV_URL);
+      if(!res.ok){
+        throw new Error("Gagal fetch CSV: " + res.status + " " + res.statusText);
+      }
+      const text = await res.text();
+
+      const parsed = Papa.parse(text,{
+        header:true,
+        skipEmptyLines:true
+      });
+
+      if(parsed.errors && parsed.errors.length){
+        console.warn("CSV parse warnings:", parsed.errors);
+      }
+
+      rawRows = parsed.data || [];
+
+      $("load-state").style.display = "none";
+
+      if(!rawRows.length){
+        $("error-state").textContent = "Data kosong atau header kolom belum sesuai dengan konfigurasi.";
+        $("error-state").style.display = "block";
+        return;
+      }
+
+      initFilters();
+      attachFilterEvents();
+      updateAllTables();
+
+    }catch(err){
+      console.error(err);
+      $("load-state").style.display = "none";
+      $("error-state").textContent = "Terjadi kesalahan saat memuat data: " + err.message;
+      $("error-state").style.display = "block";
+    }
+  }
+
+  document.addEventListener("DOMContentLoaded", loadCsv);
+</script>
+</body>
+</html>
