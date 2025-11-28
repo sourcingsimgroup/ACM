@@ -130,31 +130,86 @@
       color:var(--muted);
     }
 
-    .filter-search{
-      padding:6px 9px;
-      border-radius:999px;
-      border:1px dashed var(--line);
-      font-size:0.75rem;
-      background:#f9fafb;
-      outline:none;
+    /* Multi-select custom */
+    .ms{
+      position:relative;
     }
-
-    select{
-      padding:8px 10px;
+    .ms-toggle{
+      width:100%;
       border-radius:999px;
       border:1px solid var(--line);
-      font-size:0.8rem;
-      outline:none;
       background:#f9fafb;
-      color:var(--ink);
-      transition:border-color 0.18s, box-shadow 0.18s, background 0.18s;
+      padding:8px 10px;
+      font-size:0.8rem;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:8px;
+      cursor:pointer;
     }
-    select:focus{
-      border-color:var(--brand);
-      box-shadow:0 0 0 3px rgba(37,99,235,0.18);
+    .ms-placeholder{
+      flex:1;
+      text-align:left;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+    .ms-counter{
+      font-size:0.7rem;
+      color:var(--muted);
+      white-space:nowrap;
+    }
+    .ms-arrow{
+      font-size:0.7rem;
+    }
+    .ms-panel{
+      position:absolute;
+      left:0;
+      right:0;
+      top:100%;
+      margin-top:4px;
       background:#ffffff;
+      border-radius:14px;
+      box-shadow:0 12px 30px rgba(15,23,42,0.12);
+      border:1px solid rgba(148,163,184,0.4);
+      padding:8px;
+      z-index:20;
+      display:none;
     }
-    select:disabled{
+    .ms.open .ms-panel{
+      display:block;
+    }
+    .ms-search{
+      width:100%;
+      padding:6px 8px;
+      border-radius:999px;
+      border:1px solid var(--line);
+      font-size:0.75rem;
+      margin-bottom:6px;
+      outline:none;
+    }
+    .ms-options{
+      max-height:220px;
+      overflow-y:auto;
+    }
+    .ms-option{
+      display:flex;
+      align-items:center;
+      gap:6px;
+      padding:3px 4px;
+      font-size:0.76rem;
+      cursor:pointer;
+    }
+    .ms-option input{
+      accent-color:var(--brand);
+    }
+    .ms-empty{
+      font-size:0.74rem;
+      color:var(--muted);
+      padding:4px 2px;
+      display:none;
+    }
+    .ms-disabled .ms-toggle{
       background:#e5e7eb;
       color:#9ca3af;
       cursor:not-allowed;
@@ -166,6 +221,7 @@
       color:var(--muted);
     }
 
+    /* Summary cards */
     .summary-row{
       display:grid;
       grid-template-columns:repeat(3,minmax(0,1fr));
@@ -401,7 +457,7 @@
     <div class="title-right">
       <span class="pill">
         <span class="pill-dot"></span>
-        Dashboard preview &mdash; data dari sheet <strong>Responses</strong>
+        Live from Google Sheets CSV
       </span>
     </div>
   </header>
@@ -410,45 +466,80 @@
   <section class="card filter-card">
     <div class="card-title-row">
       <div class="card-title">Filter Data Applicant</div>
-      <div class="card-tag">Live from Google Sheets CSV</div>
+      <div class="card-tag">Sheet: Responses</div>
     </div>
     <div class="card-subtext">
-      Sesuaikan filter di bawah untuk melihat preview analisa. Kosongkan filter (Semua) untuk menampilkan keseluruhan.
+      Sesuaikan filter di bawah untuk melihat preview analisa. Kosongkan filter (tanpa pilihan) untuk menampilkan keseluruhan.
     </div>
 
     <div class="filters">
       <div class="filter-group">
-        <label class="filter-label" for="filter-prov">Provinsi Minat Penempatan</label>
-        <input id="search-prov" class="filter-search" placeholder="Cari provinsi..." />
-        <select id="filter-prov">
-          <option value="ALL">Semua Provinsi</option>
-        </select>
+        <label class="filter-label">Provinsi Minat Penempatan</label>
+        <div class="ms" id="ms-prov">
+          <button type="button" class="ms-toggle">
+            <span class="ms-placeholder">Semua Provinsi</span>
+            <span class="ms-counter"></span>
+            <span class="ms-arrow">▾</span>
+          </button>
+          <div class="ms-panel">
+            <input class="ms-search" type="text" placeholder="Cari provinsi..." />
+            <div class="ms-options"></div>
+            <div class="ms-empty">Tidak ada provinsi</div>
+          </div>
+        </div>
       </div>
+
       <div class="filter-group">
-        <label class="filter-label" for="filter-kota">Kota Minat Penempatan</label>
-        <input id="search-kota" class="filter-search" placeholder="Cari kota..." />
-        <select id="filter-kota" disabled>
-          <option value="ALL">Pilih provinsi terlebih dahulu</option>
-        </select>
+        <label class="filter-label">Kota Minat Penempatan</label>
+        <div class="ms ms-disabled" id="ms-kota">
+          <button type="button" class="ms-toggle">
+            <span class="ms-placeholder">Pilih provinsi terlebih dahulu</span>
+            <span class="ms-counter"></span>
+            <span class="ms-arrow">▾</span>
+          </button>
+          <div class="ms-panel">
+            <input class="ms-search" type="text" placeholder="Cari kota..." />
+            <div class="ms-options"></div>
+            <div class="ms-empty">Tidak ada kota</div>
+          </div>
+        </div>
       </div>
+
       <div class="filter-group">
-        <label class="filter-label" for="filter-cycle">Cycle Hired</label>
-        <input id="search-cycle" class="filter-search" placeholder="Cari cycle..." />
-        <select id="filter-cycle">
-          <option value="ALL">Semua Cycle</option>
-        </select>
+        <label class="filter-label">Cycle Hired</label>
+        <div class="ms" id="ms-cycle">
+          <button type="button" class="ms-toggle">
+            <span class="ms-placeholder">Semua Cycle</span>
+            <span class="ms-counter"></span>
+            <span class="ms-arrow">▾</span>
+          </button>
+          <div class="ms-panel">
+            <input class="ms-search" type="text" placeholder="Cari cycle..." />
+            <div class="ms-options"></div>
+            <div class="ms-empty">Tidak ada cycle</div>
+          </div>
+        </div>
       </div>
+
       <div class="filter-group">
-        <label class="filter-label" for="filter-periode">Periode Pelamar</label>
-        <input id="search-periode" class="filter-search" placeholder="Cari periode..." />
-        <select id="filter-periode">
-          <option value="ALL">Semua Periode</option>
-        </select>
+        <label class="filter-label">Periode Pelamar</label>
+        <div class="ms" id="ms-periode">
+          <button type="button" class="ms-toggle">
+            <span class="ms-placeholder">Semua Periode</span>
+            <span class="ms-counter"></span>
+            <span class="ms-arrow">▾</span>
+          </button>
+          <div class="ms-panel">
+            <input class="ms-search" type="text" placeholder="Cari periode..." />
+            <div class="ms-options"></div>
+            <div class="ms-empty">Tidak ada periode</div>
+          </div>
+        </div>
       </div>
     </div>
 
     <div class="filter-hint">
-      * Setiap filter bisa diketik untuk mencari opsi. Filter bisa dipakai bersamaan (multiple filter).
+      * Klik filter untuk membuka daftar + kolom search. Bisa memilih lebih dari satu nilai di setiap filter.
     </div>
 
     <div id="load-state" class="loading">
@@ -568,7 +659,7 @@
           <span class="status-dot"></span>
           <span id="status-metode">Menunggu data...</span>
         </div>
-        <div class="status-right">Sumber: kolom METODE SOURCING / SUMBER MEDIA SOSIAL</div>
+        <div class="status-right">Sumber: METODE SOURCING / media</div>
       </div>
     </article>
   </section>
@@ -600,7 +691,7 @@
           <span class="status-dot"></span>
           <span id="status-media">Menunggu data...</span>
         </div>
-        <div class="status-right">Sumber: kata kunci platform di baris data</div>
+        <div class="status-right">Deteksi platform berdasarkan kata kunci di baris data</div>
       </div>
     </article>
 
@@ -646,7 +737,7 @@
   const COL_KATEGORI  = "KATEGORI APP";
   const COL_QUALIFIED = "QUALIFIED";
   const COL_METODE    = "METODE SOURCING";
-  const COL_MEDIA_PREF= "SUMBER MEDIA SOSIAL";   // nama prefer, nanti auto-detect kalau beda
+  const COL_MEDIA_PREF= "SUMBER MEDIA SOSIAL";   // prefer, nanti auto detect
   const COL_EDU       = "PENDIDIKAN TERAKHIR";
   const COL_GENDER    = "JENIS KELAMIN";
 
@@ -678,6 +769,8 @@
   let DETECTED_COL_MEDIA = COL_MEDIA_PREF;
   const provKotaMap = new Map();
 
+  let msProv, msKota, msCycle, msPeriode;
+
   const $ = id => document.getElementById(id);
   const numberFmt = new Intl.NumberFormat('id-ID',{maximumFractionDigits:0});
   const norm = v => String(v ?? "").trim().toUpperCase();
@@ -695,6 +788,119 @@
       .sort((a,b)=>String(a).localeCompare(String(b),"id"));
   }
 
+  /********** MULTISELECT HELPER **********/
+  function createMultiSelect(rootId, options, placeholder, disabled, onChange){
+    const root = $(rootId);
+    const toggle = root.querySelector(".ms-toggle");
+    const panel = root.querySelector(".ms-panel");
+    const searchInput = root.querySelector(".ms-search");
+    const optsContainer = root.querySelector(".ms-options");
+    const emptyEl = root.querySelector(".ms-empty");
+    const labelSpan = root.querySelector(".ms-placeholder");
+    const counterSpan = root.querySelector(".ms-counter");
+
+    const state = {
+      options:[...(options || [])],
+      selected:new Set()
+    };
+
+    function updateLabel(){
+      const count = state.selected.size;
+      if(count === 0){
+        labelSpan.textContent = placeholder;
+        counterSpan.textContent = "";
+      }else if(count <= 2){
+        labelSpan.textContent = Array.from(state.selected).join(", ");
+        counterSpan.textContent = "";
+      }else{
+        labelSpan.textContent = placeholder;
+        counterSpan.textContent = count + " dipilih";
+      }
+    }
+
+    function renderOptions(){
+      optsContainer.innerHTML = "";
+      const term = searchInput.value.toLowerCase();
+      let visibleCount = 0;
+
+      state.options.forEach(val=>{
+        const text = String(val);
+        if(term && !text.toLowerCase().includes(term)) return;
+
+        visibleCount++;
+        const label = document.createElement("label");
+        label.className = "ms-option";
+
+        const cb = document.createElement("input");
+        cb.type = "checkbox";
+        cb.value = text;
+        cb.checked = state.selected.has(text);
+
+        cb.addEventListener("change",()=>{
+          if(cb.checked) state.selected.add(text);
+          else state.selected.delete(text);
+          updateLabel();
+          if(onChange) onChange(getSelected());
+        });
+
+        const span = document.createElement("span");
+        span.textContent = text;
+
+        label.appendChild(cb);
+        label.appendChild(span);
+        optsContainer.appendChild(label);
+      });
+
+      emptyEl.style.display = visibleCount ? "none" : "block";
+    }
+
+    function getSelected(){
+      return Array.from(state.selected);
+    }
+
+    function setOptions(newOptions){
+      state.options = [...(newOptions || [])];
+      state.selected.clear();
+      searchInput.value = "";
+      renderOptions();
+      updateLabel();
+    }
+
+    function setDisabled(flag){
+      if(flag){
+        root.classList.add("ms-disabled");
+        root.classList.remove("open");
+      }else{
+        root.classList.remove("ms-disabled");
+      }
+    }
+
+    toggle.addEventListener("click",()=>{
+      if(root.classList.contains("ms-disabled")) return;
+      const isOpen = root.classList.toggle("open");
+      if(isOpen){
+        searchInput.value = "";
+        renderOptions();
+        searchInput.focus();
+      }
+    });
+
+    searchInput.addEventListener("input",renderOptions);
+
+    // close if click outside
+    document.addEventListener("click",(e)=>{
+      if(!root.contains(e.target)){
+        root.classList.remove("open");
+      }
+    });
+
+    setDisabled(!!disabled);
+    renderOptions();
+    updateLabel();
+
+    return {getSelected,setOptions,setDisabled};
+  }
+
   /********** PROV-KOTA MAP **********/
   function buildProvKotaMap(){
     provKotaMap.clear();
@@ -708,6 +914,23 @@
     });
   }
 
+  function updateKotaOptionsByProv(selectedProv){
+    if(!msKota) return;
+    if(!selectedProv || !selectedProv.length){
+      msKota.setOptions([]);
+      msKota.setDisabled(true);
+      return;
+    }
+    const citySet = new Set();
+    selectedProv.forEach(p=>{
+      const s = provKotaMap.get(p);
+      if(s) s.forEach(c=>citySet.add(c));
+    });
+    const cityList = uniqueSorted(Array.from(citySet));
+    msKota.setOptions(cityList);
+    msKota.setDisabled(false);
+  }
+
   function initFilters(){
     buildProvKotaMap();
 
@@ -715,77 +938,27 @@
     const cycleVals   = uniqueSorted(rawRows.map(r => r[COL_CYCLE]));
     const periodeVals = uniqueSorted(rawRows.map(r => r[COL_PERIODE]));
 
-    fillSelect("filter-prov",provVals,"Semua Provinsi");
-
-    const kotaSel = $("filter-kota");
-    kotaSel.innerHTML = "";
-    const optK = document.createElement("option");
-    optK.value = "ALL";
-    optK.textContent = "Pilih provinsi terlebih dahulu";
-    kotaSel.appendChild(optK);
-    kotaSel.disabled = true;
-
-    fillSelect("filter-cycle",cycleVals,"Semua Cycle");
-    fillSelect("filter-periode",periodeVals,"Semua Periode");
-
-    attachSearchToSelect("search-prov","filter-prov");
-    attachSearchToSelect("search-kota","filter-kota");
-    attachSearchToSelect("search-cycle","filter-cycle");
-    attachSearchToSelect("search-periode","filter-periode");
-  }
-
-  function fillSelect(id,values,placeholder){
-    const sel = $(id);
-    sel.innerHTML = "";
-    const optAll = document.createElement("option");
-    optAll.value = "ALL";
-    optAll.textContent = placeholder;
-    sel.appendChild(optAll);
-    values.forEach(v=>{
-      const opt = document.createElement("option");
-      opt.value = v;
-      opt.textContent = v;
-      sel.appendChild(opt);
+    msProv = createMultiSelect("ms-prov",provVals,"Semua Provinsi",false,(sel)=>{
+      updateKotaOptionsByProv(sel);
+      updateAllTables();
+    });
+    msKota = createMultiSelect("ms-kota",[], "Semua kota di provinsi ini",true,()=>{
+      updateAllTables();
+    });
+    msCycle = createMultiSelect("ms-cycle",cycleVals,"Semua Cycle",false,()=>{
+      updateAllTables();
+    });
+    msPeriode = createMultiSelect("ms-periode",periodeVals,"Semua Periode",false,()=>{
+      updateAllTables();
     });
   }
 
-  function updateKotaOptionsByProv(){
-    const prov = $("filter-prov").value;
-    const kotaSel = $("filter-kota");
-
-    if(prov === "ALL"){
-      kotaSel.disabled = true;
-      kotaSel.innerHTML = "";
-      const opt = document.createElement("option");
-      opt.value = "ALL";
-      opt.textContent = "Pilih provinsi terlebih dahulu";
-      kotaSel.appendChild(opt);
-      return;
-    }
-
-    const kotaSet = provKotaMap.get(prov) || new Set();
-    const kotaVals = uniqueSorted(Array.from(kotaSet));
-
-    kotaSel.disabled = false;
-    kotaSel.innerHTML = "";
-    const optAll = document.createElement("option");
-    optAll.value = "ALL";
-    optAll.textContent = "Semua kota di provinsi ini";
-    kotaSel.appendChild(optAll);
-
-    kotaVals.forEach(k=>{
-      const o = document.createElement("option");
-      o.value = k;
-      o.textContent = k;
-      kotaSel.appendChild(o);
-    });
-  }
-
+  /********** FILTERED ROWS (MULTI FILTER) **********/
   function getFilteredRows(){
-    const prov    = $("filter-prov").value;
-    const kota    = $("filter-kota").value;
-    const cycle   = $("filter-cycle").value;
-    const periode = $("filter-periode").value;
+    const provSel    = new Set(msProv ? msProv.getSelected()    : []);
+    const kotaSel    = new Set(msKota ? msKota.getSelected()    : []);
+    const cycleSel   = new Set(msCycle ? msCycle.getSelected()  : []);
+    const periodeSel = new Set(msPeriode ? msPeriode.getSelected():[]);
 
     return rawRows.filter(row=>{
       const rowProv    = String(row[COL_PROV] ?? "");
@@ -793,15 +966,15 @@
       const rowCycle   = String(row[COL_CYCLE] ?? "");
       const rowPeriode = String(row[COL_PERIODE] ?? "");
 
-      if(prov !== "ALL" && rowProv !== prov) return false;
-      if(prov !== "ALL" && kota !== "ALL" && rowKota !== kota) return false;
-      if(cycle !== "ALL" && rowCycle !== cycle) return false;
-      if(periode !== "ALL" && rowPeriode !== periode) return false;
+      if(provSel.size    && !provSel.has(rowProv)) return false;
+      if(kotaSel.size    && !kotaSel.has(rowKota)) return false;
+      if(cycleSel.size   && !cycleSel.has(rowCycle)) return false;
+      if(periodeSel.size && !periodeSel.has(rowPeriode)) return false;
       return true;
     });
   }
 
-  /********** AGGREGATE FIXED LIST (PROV & EDU) **********/
+  /********** AGGREGASI **********/
   function aggregateByFixedList(rows,dimCol,fixedList){
     const result = fixedList.map(name=>({name,valid:0,buffer:0}));
     const idxMap = new Map();
@@ -825,7 +998,6 @@
     return result;
   }
 
-  /********** AGGREGATE METODE (OFFLINE / ONLINE) **********/
   function aggregateMetodeSmart(rows){
     const buckets = {
       "OFFLINE": {name:"OFFLINE",valid:0,buffer:0},
@@ -868,7 +1040,6 @@
     ];
   }
 
-  /********** AGGREGATE MEDIA SOSIAL (SCAN BARIS) **********/
   function aggregateMediaSmart(rows){
     const map = new Map();
     FIXED_MEDIA_LIST.forEach(name=>{
@@ -896,11 +1067,9 @@
     ];
 
     rows.forEach(row=>{
-      // gabungkan teks dari kolom media + metode + kolom lain sebagai backup
       const parts = [];
       if(row[DETECTED_COL_MEDIA] !== undefined) parts.push(row[DETECTED_COL_MEDIA]);
       if(row[COL_METODE] !== undefined) parts.push(row[COL_METODE]);
-      // backup: gabungkan seluruh nilai row
       parts.push(Object.values(row).join(" "));
 
       const text = norm(parts.join(" | "));
@@ -983,7 +1152,7 @@
     return {grandValid,grandBuffer};
   }
 
-  /********** SUMMARY (PRIA / WANITA / TOTAL) **********/
+  /********** SUMMARY **********/
   function updateSummary(filtered){
     let totalValid = 0;
     let totalBuffer = 0;
@@ -998,25 +1167,25 @@
 
       const g = norm(row[COL_GENDER]);
       if(g.includes("LAKI") || g === "L" || g === "PRIA"){
-        maleValid += valid;
+        maleValid  += valid;
         maleBuffer += buffer;
-      } else if(g.includes("PEREMPUAN") || g === "P" || g === "WANITA"){
-        femaleValid += valid;
+      }else if(g.includes("PEREMPUAN") || g === "P" || g === "WANITA"){
+        femaleValid  += valid;
         femaleBuffer += buffer;
       }
     });
 
-    $("sum-male-valid").textContent   = numberFmt.format(maleValid);
-    $("sum-male-buffer").textContent  = numberFmt.format(maleBuffer);
-    $("sum-female-valid").textContent = numberFmt.format(femaleValid);
-    $("sum-female-buffer").textContent= numberFmt.format(femaleBuffer);
-    $("sum-total-valid").textContent  = numberFmt.format(totalValid);
-    $("sum-total-buffer").textContent = numberFmt.format(totalBuffer);
+    $("sum-male-valid").textContent    = numberFmt.format(maleValid);
+    $("sum-male-buffer").textContent   = numberFmt.format(maleBuffer);
+    $("sum-female-valid").textContent  = numberFmt.format(femaleValid);
+    $("sum-female-buffer").textContent = numberFmt.format(femaleBuffer);
+    $("sum-total-valid").textContent   = numberFmt.format(totalValid);
+    $("sum-total-buffer").textContent  = numberFmt.format(totalBuffer);
 
     return {totalValid,totalBuffer};
   }
 
-  /********** UPDATE SEMUA TABEL **********/
+  /********** UPDATE DASHBOARD **********/
   function updateAllTables(){
     const filtered = getFilteredRows();
     const totalRows = filtered.length;
@@ -1046,38 +1215,9 @@
     $("status-edu").textContent =
       `Ditampilkan ${eduAgg.length} level pendidikan · ${numberFmt.format(totalRows)} baris terfilter · ` +
       `Grand Total Valid: ${numberFmt.format(totalEdu.grandValid)}, Buffer: ${numberFmt.format(totalEdu.grandBuffer)}`;
-
-    // catatan: kalau ada sedikit beda angka antar tabel,
-    // biasanya karena ada baris yang tidak punya provinsi / pendidikan / media yang sesuai list fix.
   }
 
-  /********** FILTER EVENTS & SEARCH BOX **********/
-  function attachSearchToSelect(inputId,selectId){
-    const input = $(inputId);
-    const select = $(selectId);
-    if(!input || !select) return;
-
-    input.addEventListener("input",()=>{
-      const term = input.value.toLowerCase();
-      Array.from(select.options).forEach((opt,idx)=>{
-        if(idx===0){ opt.hidden = false; return; } // opsi "ALL" selalu tampil
-        const text = opt.textContent.toLowerCase();
-        opt.hidden = term && !text.includes(term);
-      });
-    });
-  }
-
-  function attachFilterEvents(){
-    $("filter-prov").addEventListener("change",()=>{
-      updateKotaOptionsByProv();
-      updateAllTables();
-    });
-    ["filter-kota","filter-cycle","filter-periode"].forEach(id=>{
-      $(id).addEventListener("change",updateAllTables);
-    });
-  }
-
-  /********** DETECT KOLUMN MEDIA OTOMATIS **********/
+  /********** DETECT MEDIA COLUMN **********/
   function detectMediaColumn(fields){
     if(!fields || !fields.length) return COL_MEDIA_PREF;
     const preferredNorm = norm(COL_MEDIA_PREF);
@@ -1114,7 +1254,6 @@
       }
 
       initFilters();
-      attachFilterEvents();
       updateAllTables();
 
     }catch(err){
