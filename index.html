@@ -221,6 +221,125 @@
       color:var(--muted);
     }
 
+    .card-title-row{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      margin-bottom:8px;
+      gap:8px;
+    }
+
+    .card-title{
+      font-size:0.95rem;
+      font-weight:600;
+    }
+
+    .card-tag{
+      font-size:0.7rem;
+      padding:4px 10px;
+      border-radius:999px;
+      background:var(--brand-soft);
+      color:var(--brand);
+      font-weight:600;
+      white-space:nowrap;
+    }
+
+    .header-right-flex{
+      display:flex;
+      align-items:center;
+      gap:8px;
+    }
+
+    .clear-btn{
+      border-radius:999px;
+      border:1px solid var(--line);
+      background:#f9fafb;
+      font-size:0.75rem;
+      padding:5px 10px;
+      cursor:pointer;
+      color:var(--muted);
+    }
+    .clear-btn:hover{
+      background:#eef2ff;
+      border-color:var(--brand);
+      color:var(--brand);
+    }
+
+    /* Grafik bulanan */
+    .chart-card{
+      margin-bottom:14px;
+    }
+    .chart-legend{
+      display:flex;
+      align-items:center;
+      gap:16px;
+      font-size:0.75rem;
+      color:var(--muted);
+      margin-bottom:6px;
+      flex-wrap:wrap;
+    }
+    .legend-item{
+      display:flex;
+      align-items:center;
+      gap:6px;
+    }
+    .legend-dot{
+      width:12px;
+      height:6px;
+      border-radius:999px;
+    }
+    .legend-valid{background:var(--brand);}
+    .legend-buffer{background:var(--total);}
+
+    .chart-body{
+      display:flex;
+      flex-direction:column;
+      gap:4px;
+      margin-top:4px;
+    }
+    .chart-row{
+      display:grid;
+      grid-template-columns:70px minmax(0,1fr) 90px;
+      gap:8px;
+      align-items:center;
+      font-size:0.75rem;
+    }
+    .chart-label{
+      color:var(--muted);
+    }
+    .chart-bars{
+      display:flex;
+      flex-direction:column;
+      gap:3px;
+    }
+    .chart-bar{
+      height:6px;
+      border-radius:999px;
+      background:#e5e7eb;
+      overflow:hidden;
+    }
+    .bar-valid{
+      background:var(--brand);
+    }
+    .bar-buffer{
+      background:var(--total);
+    }
+    .chart-values{
+      display:flex;
+      flex-direction:column;
+      align-items:flex-end;
+      font-variant-numeric:tabular-nums;
+    }
+    .chart-values span{
+      line-height:1.3;
+    }
+    .chart-footer{
+      margin-top:6px;
+      font-size:0.72rem;
+      color:var(--muted);
+      font-style:italic;
+    }
+
     /* Summary cards */
     .summary-row{
       display:grid;
@@ -295,29 +414,6 @@
     }
     @media (max-width:960px){
       .grid{grid-template-columns:1fr;}
-    }
-
-    .card-title-row{
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-      margin-bottom:8px;
-      gap:8px;
-    }
-
-    .card-title{
-      font-size:0.95rem;
-      font-weight:600;
-    }
-
-    .card-tag{
-      font-size:0.7rem;
-      padding:4px 10px;
-      border-radius:999px;
-      background:var(--brand-soft);
-      color:var(--brand);
-      font-weight:600;
-      white-space:nowrap;
     }
 
     .card-subtext{
@@ -466,7 +562,10 @@
   <section class="card filter-card">
     <div class="card-title-row">
       <div class="card-title">Filter Data Applicant</div>
-      <div class="card-tag">Sheet: Responses</div>
+      <div class="header-right-flex">
+        <button id="clear-filters-btn" class="clear-btn" type="button">Hapus semua filter</button>
+        <div class="card-tag">Sheet: Responses</div>
+      </div>
     </div>
     <div class="card-subtext">
       Sesuaikan filter di bawah untuk melihat preview analisa. Kosongkan filter (tanpa pilihan) untuk menampilkan keseluruhan.
@@ -547,6 +646,31 @@
       <span>Memuat data dari Google Sheets...</span>
     </div>
     <div id="error-state" class="error" style="display:none;"></div>
+  </section>
+
+  <!-- GRAFIK BULANAN -->
+  <section class="card chart-card">
+    <div class="card-title-row">
+      <div class="card-title">Trend Applicant Valid &amp; Buffer per Bulan</div>
+      <div class="card-tag">Horizontal bar · Jan–Des</div>
+    </div>
+    <p class="card-subtext">
+      Pertumbuhan Applicant Valid (APLIKAN VALID - CTC 1) dan Buffer berdasarkan <strong>PERIODE PELAMAR</strong>. Mengikuti filter di atas.
+    </p>
+    <div class="chart-legend">
+      <div class="legend-item">
+        <span class="legend-dot legend-valid"></span>
+        <span>Applicant Valid</span>
+      </div>
+      <div class="legend-item">
+        <span class="legend-dot legend-buffer"></span>
+        <span>Buffer</span>
+      </div>
+    </div>
+    <div id="chart-body" class="chart-body"></div>
+    <div id="chart-summary-text" class="chart-footer">
+      Menunggu data...
+    </div>
   </section>
 
   <!-- SUMMARY BOXES -->
@@ -764,6 +888,21 @@
 
   const FIXED_EDU_LIST = ["SMP","SMA / SMK","D1","D2","D3","D4","S1","S2","S3"];
 
+  const MONTHS = [
+    {idx:1,label:"Januari"},
+    {idx:2,label:"Februari"},
+    {idx:3,label:"Maret"},
+    {idx:4,label:"April"},
+    {idx:5,label:"Mei"},
+    {idx:6,label:"Juni"},
+    {idx:7,label:"Juli"},
+    {idx:8,label:"Agustus"},
+    {idx:9,label:"September"},
+    {idx:10,label:"Oktober"},
+    {idx:11,label:"November"},
+    {idx:12,label:"Desember"}
+  ];
+
   /********** STATE **********/
   let rawRows = [];
   let DETECTED_COL_MEDIA = COL_MEDIA_PREF;
@@ -875,6 +1014,14 @@
       }
     }
 
+    function clear(){
+      state.selected.clear();
+      searchInput.value = "";
+      renderOptions();
+      updateLabel();
+      if(onChange) onChange(getSelected());
+    }
+
     toggle.addEventListener("click",()=>{
       if(root.classList.contains("ms-disabled")) return;
       const isOpen = root.classList.toggle("open");
@@ -887,7 +1034,6 @@
 
     searchInput.addEventListener("input",renderOptions);
 
-    // close if click outside
     document.addEventListener("click",(e)=>{
       if(!root.contains(e.target)){
         root.classList.remove("open");
@@ -898,7 +1044,7 @@
     renderOptions();
     updateLabel();
 
-    return {getSelected,setOptions,setDisabled};
+    return {getSelected,setOptions,setDisabled,clear};
   }
 
   /********** PROV-KOTA MAP **********/
@@ -951,6 +1097,17 @@
     msPeriode = createMultiSelect("ms-periode",periodeVals,"Semua Periode",false,()=>{
       updateAllTables();
     });
+  }
+
+  function clearFilters(){
+    if(msProv)    msProv.clear();
+    if(msCycle)   msCycle.clear();
+    if(msPeriode) msPeriode.clear();
+    if(msKota){
+      msKota.setOptions([]);
+      msKota.setDisabled(true);
+    }
+    updateAllTables();
   }
 
   /********** FILTERED ROWS (MULTI FILTER) **********/
@@ -1094,6 +1251,121 @@
     return FIXED_MEDIA_LIST.map(name=>map.get(name));
   }
 
+  /********** GRAFIK BULANAN **********/
+  function parseMonthIndex(str){
+    if(!str) return null;
+    const s = String(str).toLowerCase();
+
+    const monthNames = [
+      {idx:1,keys:["jan","januari"]},
+      {idx:2,keys:["feb","peb","febuari","februari"]},
+      {idx:3,keys:["mar","maret"]},
+      {idx:4,keys:["apr","april"]},
+      {idx:5,keys:["mei","may"]},
+      {idx:6,keys:["jun","juni","june"]},
+      {idx:7,keys:["jul","juli","july"]},
+      {idx:8,keys:["agu","agust","aug","agustus","august"]},
+      {idx:9,keys:["sep","sept","september"]},
+      {idx:10,keys:["okt","oct","oktober","october"]},
+      {idx:11,keys:["nov","november"]},
+      {idx:12,keys:["des","dec","desember","december"]}
+    ];
+
+    for(const m of monthNames){
+      if(m.keys.some(k=>s.includes(k))) return m.idx;
+    }
+
+    // bentuk YYYY-MM atau YYYY/MM
+    let m = s.match(/(\d{4})[-/](\d{1,2})(?:[-/]\d{1,2})?/);
+    if(m){
+      const month = Number(m[2]);
+      if(month>=1 && month<=12) return month;
+    }
+
+    // bentuk DD/MM/YYYY atau DD-MM-YYYY
+    m = s.match(/(\d{1,2})[-/](\d{1,2})[-/](\d{2,4})/);
+    if(m){
+      const a = Number(m[1]);
+      const b = Number(m[2]);
+      let month = null;
+      if(a>12 && b>=1 && b<=12) month = b;
+      else if(b>12 && a>=1 && a<=12) month = a;
+      else if(a>=1 && a<=12) month = a;
+      else if(b>=1 && b<=12) month = b;
+      if(month && month>=1 && month<=12) return month;
+    }
+
+    return null;
+  }
+
+  function aggregateMonthly(rows){
+    const arr = MONTHS.map(m=>({idx:m.idx,name:m.label,valid:0,buffer:0}));
+    const idxMap = new Map();
+    arr.forEach((m,i)=>idxMap.set(m.idx,i));
+
+    rows.forEach(row=>{
+      const idx = parseMonthIndex(row[COL_PERIODE]);
+      if(!idx) return;
+      const i = idxMap.get(idx);
+      if(i === undefined) return;
+      arr[i].valid  += getApplicantValidValue(row[COL_KATEGORI]);
+      if(isQualifiedYes(row[COL_QUALIFIED])) arr[i].buffer += 1;
+    });
+
+    return arr;
+  }
+
+  function updateChart(rows){
+    const container = $("chart-body");
+    if(!container) return;
+    container.innerHTML = "";
+
+    const monthly = aggregateMonthly(rows);
+    let maxVal = 0;
+    monthly.forEach(m=>{
+      maxVal = Math.max(maxVal,m.valid,m.buffer);
+    });
+    if(maxVal === 0) maxVal = 1;
+
+    monthly.forEach(m=>{
+      const row = document.createElement("div");
+      row.className = "chart-row";
+
+      const label = document.createElement("div");
+      label.className = "chart-label";
+      label.textContent = m.name;
+
+      const bars = document.createElement("div");
+      bars.className = "chart-bars";
+
+      const barValid = document.createElement("div");
+      barValid.className = "chart-bar bar-valid";
+      barValid.style.width = (m.valid / maxVal * 100) + "%";
+
+      const barBuffer = document.createElement("div");
+      barBuffer.className = "chart-bar bar-buffer";
+      barBuffer.style.width = (m.buffer / maxVal * 100) + "%";
+
+      bars.appendChild(barValid);
+      bars.appendChild(barBuffer);
+
+      const values = document.createElement("div");
+      values.className = "chart-values";
+      values.innerHTML =
+        `<span>${numberFmt.format(m.valid)}</span><span>${numberFmt.format(m.buffer)}</span>`;
+
+      row.appendChild(label);
+      row.appendChild(bars);
+      row.appendChild(values);
+      container.appendChild(row);
+    });
+
+    const totalValid = monthly.reduce((s,m)=>s+m.valid,0);
+    const totalBuffer = monthly.reduce((s,m)=>s+m.buffer,0);
+    $("chart-summary-text").textContent =
+      `Total Valid: ${numberFmt.format(totalValid)} · Total Buffer: ${numberFmt.format(totalBuffer)} (berdasarkan PERIODE PELAMAR & filter aktif)`;
+  }
+
   /********** RENDER TABLE + GRAND TOTAL **********/
   function renderTable(tbodyId,rows,totalLabel){
     const tbody = $(tbodyId);
@@ -1191,6 +1463,7 @@
     const totalRows = filtered.length;
 
     const national = updateSummary(filtered);
+    updateChart(filtered);
 
     const provAgg   = aggregateByFixedList(filtered,COL_PROV,FIXED_PROV_LIST);
     const totalProv = renderTable("tbl-prov-body",provAgg,"GRAND TOTAL PROVINSI");
@@ -1264,7 +1537,11 @@
     }
   }
 
-  document.addEventListener("DOMContentLoaded",loadCsv);
+  document.addEventListener("DOMContentLoaded",()=>{
+    const clearBtn = $("clear-filters-btn");
+    if(clearBtn) clearBtn.addEventListener("click",clearFilters);
+    loadCsv();
+  });
 </script>
 </body>
 </html>
