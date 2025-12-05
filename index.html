@@ -104,7 +104,7 @@
 
     .filters{
       display:grid;
-      grid-template-columns:repeat(5,minmax(0,1fr)); /* 5 filter sejajar */
+      grid-template-columns:repeat(5,minmax(0,1fr));
       gap:10px;
       margin-top:10px;
     }
@@ -574,7 +574,7 @@
     <div class="title-right">
       <span class="pill">
         <span class="pill-dot"></span>
-        Live from Google Sheets (CSV)
+        Live from Google Sheets CSV
       </span>
     </div>
   </header>
@@ -906,21 +906,9 @@
 </div>
 
 <script>
-  /********** KONFIGURASI **********/
+  /********** KONFIGURASI URL CSV **********/
+  const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ1IRy6uulUDdZtEV05QNMrse9vdqLTn_NDDoi-KgYTkEBV44HZAqAZHqgOQ6m4FwZ59kcQxHm3elhT/pub?gid=1347000673&single=true&output=csv";
 
-  // === PENTING: GANTI 2 KONSTAN INI ===
-  // Contoh link Google Sheets:
-  // https://docs.google.com/spreadsheets/d/1AbCdEfGhIjKlMnOpQrStUvWxYz1234567890/edit#gid=0
-  //  - SPREADSHEET_ID = "1AbCdEfGhIjKlMnOpQrStUvWxYz1234567890"
-  //  - SHEET_NAME     = "Responses"  (atau nama sheet yang kamu pakai)
-  const SPREADSHEET_ID = "GANTI_DENGAN_SPREADSHEET_ID_KAMU";
-  const SHEET_NAME     = "Responses";
-
-  // Endpoint CSV publik (per sheet) – tidak perlu 2PACX / gid
-  const CSV_URL =
-    `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(SHEET_NAME)}`;
-
-  // ================================
   const COL_PROV      = "PROVINSI MINAT PENEMPATAN";
   const COL_KOTA      = "KOTA MINAT PENEMPATAN";
   const COL_CYCLE     = "CYCLE HIRED";
@@ -932,7 +920,6 @@
   const COL_EDU       = "PENDIDIKAN TERAKHIR";
   const COL_GENDER    = "JENIS KELAMIN";
 
-  /* JOB PARENT / JOB TYPE akan di-DETEKSI dari header */
   let COL_JOB_PARENT = "JOB PARENT";
   let COL_JOB_TYPE   = "JOB TYPE";
 
@@ -974,7 +961,6 @@
     {idx:12,label:"Desember"}
   ];
 
-  /********** STATE **********/
   let rawRows = [];
   let DETECTED_COL_MEDIA = COL_MEDIA_PREF;
   const provKotaMap = new Map();
@@ -999,7 +985,6 @@
       .sort((a,b)=>String(a).localeCompare(String(b),"id"));
   }
 
-  /********** MULTISELECT HELPER **********/
   function createMultiSelect(rootId, options, placeholder, disabled, onChange){
     const root = $(rootId);
     const toggle = root.querySelector(".ms-toggle");
@@ -1010,10 +995,7 @@
     const labelSpan = root.querySelector(".ms-placeholder");
     const counterSpan = root.querySelector(".ms-counter");
 
-    const state = {
-      options:[...(options || [])],
-      selected:new Set()
-    };
+    const state = { options:[...(options || [])], selected:new Set() };
 
     function updateLabel(){
       const count = state.selected.size;
@@ -1065,9 +1047,7 @@
       emptyEl.style.display = visibleCount ? "none" : "block";
     }
 
-    function getSelected(){
-      return Array.from(state.selected);
-    }
+    function getSelected(){ return Array.from(state.selected); }
 
     function setOptions(newOptions){
       state.options = [...(newOptions || [])];
@@ -1120,7 +1100,6 @@
     return {getSelected,setOptions,setDisabled,clear};
   }
 
-  /********** DETECT COLUMN NAMES **********/
   function detectMediaColumn(fields){
     if(!fields || !fields.length) return COL_MEDIA_PREF;
     const preferredNorm = norm(COL_MEDIA_PREF);
@@ -1141,21 +1120,13 @@
 
     for(const f of fields){
       const s = norm(f);
-      if(!parent && s.includes("JOB") && s.includes("PARENT")){
-        parent = f;
-      }
-      if(!type && s.includes("JOB") && s.includes("TYPE")){
-        type = f;
-      }
+      if(!parent && s.includes("JOB") && s.includes("PARENT")) parent = f;
+      if(!type && s.includes("JOB") && s.includes("TYPE")) type = f;
     }
 
-    return {
-      parent: parent || COL_JOB_PARENT,
-      type:   type   || COL_JOB_TYPE
-    };
+    return { parent: parent || COL_JOB_PARENT, type: type || COL_JOB_TYPE };
   }
 
-  /********** MAP PROV-KOTA & JOBPARENT-JOBTYPE **********/
   function buildProvKotaMap(){
     provKotaMap.clear();
     rawRows.forEach(row=>{
@@ -1262,7 +1233,6 @@
     updateAllTables();
   }
 
-  /********** FILTERED ROWS (MULTI FILTER) **********/
   function getFilteredRows(){
     const provSel      = new Set(msProv ? msProv.getSelected()      : []);
     const kotaSel      = new Set(msKota ? msKota.getSelected()      : []);
@@ -1290,7 +1260,6 @@
     });
   }
 
-  /********** AGGREGASI **********/
   function aggregateByFixedList(rows,dimCol,fixedList){
     const result = fixedList.map(name=>({name,valid:0,buffer:0}));
     const idxMap = new Map();
@@ -1410,7 +1379,6 @@
     return FIXED_MEDIA_LIST.map(name=>map.get(name));
   }
 
-  /********** GRAFIK BULANAN **********/
   function parseMonthIndex(str){
     if(!str) return null;
     const s = String(str).toLowerCase();
@@ -1523,7 +1491,6 @@
       `Total Valid: ${numberFmt.format(totalValid)} · Total Buffer: ${numberFmt.format(totalBuffer)} (berdasarkan PERIODE PELAMAR & filter aktif)`;
   }
 
-  /********** RENDER TABLE + GRAND TOTAL **********/
   function renderTable(tbodyId,rows,totalLabel){
     const tbody = $(tbodyId);
     tbody.innerHTML = "";
@@ -1581,7 +1548,6 @@
     return {grandValid,grandBuffer};
   }
 
-  /********** SUMMARY **********/
   function updateSummary(filtered){
     let totalValid = 0;
     let totalBuffer = 0;
@@ -1610,11 +1576,8 @@
     $("sum-female-buffer").textContent = numberFmt.format(femaleBuffer);
     $("sum-total-valid").textContent   = numberFmt.format(totalValid);
     $("sum-total-buffer").textContent  = numberFmt.format(totalBuffer);
-
-    return {totalValid,totalBuffer};
   }
 
-  /********** UPDATE DASHBOARD **********/
   function updateAllTables(){
     const filtered = getFilteredRows();
     const totalRows = filtered.length;
@@ -1647,27 +1610,20 @@
       `Grand Total Valid: ${numberFmt.format(totalEdu.grandValid)}, Buffer: ${numberFmt.format(totalEdu.grandBuffer)}`;
   }
 
-  /********** LOAD CSV **********/
   async function loadCsv(){
-    const errorBox = $("error-state");
-    errorBox.style.display = "none";
+    const errBox = $("error-state");
+    errBox.style.display = "none";
     $("load-state").style.display = "flex";
 
     try{
       const res = await fetch(CSV_URL);
       if(!res.ok){
-        let extra = "";
-        try{
-          const txt = await res.text();
-          if(txt) extra = " · " + txt.slice(0,120);
-        }catch(_){}
-        throw new Error(`Gagal fetch data (HTTP ${res.status} ${res.statusText})${extra}`);
+        throw new Error("HTTP " + res.status + " " + res.statusText);
       }
       const text = await res.text();
 
       const parsed = Papa.parse(text,{header:true,skipEmptyLines:true});
       rawRows = parsed.data || [];
-
       const fields = parsed.meta && parsed.meta.fields ? parsed.meta.fields : [];
 
       DETECTED_COL_MEDIA = detectMediaColumn(fields);
@@ -1678,21 +1634,21 @@
       $("load-state").style.display = "none";
 
       if(!rawRows.length){
-        errorBox.textContent = "Data kosong atau header kolom belum sesuai dengan konfigurasi.";
-        errorBox.style.display = "block";
+        errBox.textContent = "Data kosong atau header kolom belum sesuai dengan konfigurasi.";
+        errBox.style.display = "block";
         return;
       }
 
       initFilters();
       updateAllTables();
 
-    }catch(err){
-      console.error(err);
+    }catch(e){
+      console.error(e);
       $("load-state").style.display = "none";
-      errorBox.textContent =
-        "Terjadi kesalahan saat memuat data: " + err.message +
-        " | Cek lagi SPREADSHEET_ID, SHEET_NAME & permission (Anyone with link - Viewer).";
-      errorBox.style.display = "block";
+      errBox.textContent =
+        "Terjadi kesalahan saat memuat data: " + e.message +
+        ". Pastikan link ini bisa dibuka di tab incognito tanpa login.";
+      errBox.style.display = "block";
     }
   }
 
