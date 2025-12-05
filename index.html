@@ -569,7 +569,7 @@
   <header>
     <div class="title-block">
       <h1>Applicant Cycle Management</h1>
-      <p>Preview analisa Applicant Valid &amp; Buffer berdasarkan provinsi, metode sourcing, media sosial, pendidikan, dan job type.</p>
+      <p>Preview analisa Applicant Valid &amp; Buffer berdasarkan provinsi, metode sourcing, media sosial, job portal, offline, pendidikan, dan job type.</p>
     </div>
     <div class="title-right">
       <span class="pill">
@@ -848,10 +848,11 @@
     <article class="card">
       <div class="card-title-row">
         <div class="card-title">Preview Sourcing Media Sosial</div>
-        <div class="card-tag">Per Platform</div>
+        <div class="card-tag">Per Platform Sosial</div>
       </div>
       <p class="card-subtext">
-        Breakdown Applicant Valid (APLIKAN VALID - CTC 1) &amp; Buffer dari masing-masing media sosial.
+        Breakdown Applicant Valid (APLIKAN VALID - CTC 1) &amp; Buffer dari media sosial:
+        Facebook, FLK, Instagram, Linkedin, SIM Talent Search, Telegram, Tiktok, Twitter, Whatsapp / Media Chat.
       </p>
       <div class="table-wrap">
         <table>
@@ -870,7 +871,7 @@
           <span class="status-dot"></span>
           <span id="status-media">Menunggu data...</span>
         </div>
-        <div class="status-right">Deteksi platform berdasarkan kata kunci di baris data</div>
+        <div class="status-right">Deteksi platform sosial berdasarkan kata kunci di baris data</div>
       </div>
     </article>
 
@@ -900,6 +901,73 @@
           <span id="status-edu">Menunggu data...</span>
         </div>
         <div class="status-right">Sumber: kolom PENDIDIKAN TERAKHIR</div>
+      </div>
+    </article>
+  </section>
+
+  <!-- TABEL 5 & 6 BARU -->
+  <section class="grid">
+    <!-- TABEL 5: JOB PORTAL -->
+    <article class="card">
+      <div class="card-title-row">
+        <div class="card-title">Preview Sourcing Job Portal</div>
+        <div class="card-tag">Per Portal</div>
+      </div>
+      <p class="card-subtext">
+        Applicant Valid (APLIKAN VALID - CTC 1) &amp; Buffer yang berasal dari job portal:
+        Glints, Hired Today, Indeed, JobStreet, Jobstreet Express, KarirHub, KitaLulus, Lumina, Pintarnya.
+      </p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+          <tr>
+            <th>Job Portal</th>
+            <th>Applicant Valid</th>
+            <th>Buffer</th>
+          </tr>
+          </thead>
+          <tbody id="tbl-jobportal-body"></tbody>
+        </table>
+      </div>
+      <div class="status-bar">
+        <div class="status-left">
+          <span class="status-dot"></span>
+          <span id="status-jobportal">Menunggu data...</span>
+        </div>
+        <div class="status-right">Deteksi portal berdasarkan kata kunci di baris data</div>
+      </div>
+    </article>
+
+    <!-- TABEL 6: OFFLINE -->
+    <article class="card">
+      <div class="card-title-row">
+        <div class="card-title">Preview Sourcing Offline</div>
+        <div class="card-tag">Aktivitas Lapangan</div>
+      </div>
+      <p class="card-subtext">
+        Applicant Valid (APLIKAN VALID - CTC 1) &amp; Buffer yang berasal dari aktivitas offline:
+        Academy/Training/Seminar, Balai Latian Kerja (BLK), Brosur/Banner/Spanduk/Flyer, Campus Hiring, Disnaker,
+        Drop CV, Freelance Recruiter, Job Fair, Komunitas Informal, Referensi Client,
+        Referensi Teman/Keluarga/Komunitas, School Hiring, Walk In Interview (WI).
+      </p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+          <tr>
+            <th>Offline Sourcing</th>
+            <th>Applicant Valid</th>
+            <th>Buffer</th>
+          </tr>
+          </thead>
+          <tbody id="tbl-offline-body"></tbody>
+        </table>
+      </div>
+      <div class="status-bar">
+        <div class="status-left">
+          <span class="status-dot"></span>
+          <span id="status-offline">Menunggu data...</span>
+        </div>
+        <div class="status-right">Deteksi offline activity berdasarkan kata kunci di baris data</div>
       </div>
     </article>
   </section>
@@ -938,10 +1006,47 @@
     "SUMATERA BARAT","SUMATERA SELATAN","SUMATERA UTARA"
   ];
 
+  /* LIST MEDIA SOSIAL – hanya yang kamu minta */
   const FIXED_MEDIA_LIST = [
-    "Facebook","FLK","Glints","Hired Today","Indeed","JobStreet",
-    "Jobstreet Express","KarirHub","KitaLulus","Kupu","Linkedin",
-    "Lumina","Pintarnya"
+    "Facebook",
+    "FLK",
+    "Instagram",
+    "Linkedin",
+    "SIM Talent Search",
+    "Telegram",
+    "Tiktok",
+    "Twitter",
+    "Whatsapp / Media Chat"
+  ];
+
+  /* LIST JOB PORTAL – untuk tabel 5 */
+  const FIXED_PORTAL_LIST = [
+    "Glints",
+    "Hired Today",
+    "Indeed",
+    "JobStreet",
+    "Jobstreet Express",
+    "KarirHub",
+    "KitaLulus",
+    "Lumina",
+    "Pintarnya"
+  ];
+
+  /* LIST OFFLINE – untuk tabel 6 */
+  const FIXED_OFFLINE_LIST = [
+    "Academy/Training/Seminar",
+    "Balai Latian Kerja (BLK)",
+    "Brosur/Banner/Spanduk/Flyer",
+    "Campus Hiring",
+    "Disnaker",
+    "Drop CV",
+    "Freelance Recruiter",
+    "Job Fair",
+    "Komunitas Informal",
+    "Referensi Client",
+    "Referensi Teman/Keluarga/Komunitas",
+    "School Hiring",
+    "Walk In Interview (WI)"
   ];
 
   const FIXED_EDU_LIST = ["SMP","SMA / SMK","D1","D2","D3","D4","S1","S2","S3"];
@@ -1345,13 +1450,13 @@
       if(text.includes("OFFLINE") || text.includes("WALK IN") || text.includes("WALKIN") || text.includes("JOB FAIR")){
         key = "OFFLINE";
       } else if(
-        ["FACEBOOK","FB","INSTAGRAM","IG","TIKTOK","TT","LINKEDIN","WA","WHATSAPP","MEDSOS","MEDIA SOSIAL"]
+        ["FACEBOOK","FB","INSTAGRAM","IG","TIKTOK","TT","LINKEDIN","WA","WHATSAPP","TELEGRAM","TWITTER","MEDSOS","MEDIA SOSIAL"]
           .some(t=>text.includes(t))
       ){
         key = "ONLINE - MEDIA SOSIAL";
       } else if(
         ["GLINTS","HIRED TODAY","INDEED","JOBSTREET","JOB STREET","EXPRESS",
-         "KARIRHUB","KITA LULUS","KITALULUS","KUPU","LUMINA","PINTARNYA","PORTAL"]
+         "KARIRHUB","KARIR HUB","KITA LULUS","KITALULUS","KUPU","LUMINA","PINTARNYA","PORTAL"]
           .some(t=>text.includes(t))
       ){
         key = "ONLINE - JOB PORTAL";
@@ -1369,7 +1474,8 @@
     ];
   }
 
-  function aggregateMediaSmart(rows){
+  /* TABEL 3: MEDIA SOSIAL */
+  function aggregateMediaSocial(rows){
     const map = new Map();
     FIXED_MEDIA_LIST.forEach(name=>{
       map.set(name,{name,valid:0,buffer:0});
@@ -1379,6 +1485,62 @@
       {token:"FACEBOOK",label:"Facebook"},
       {token:" FLK",label:"FLK"},
       {token:"FLK ",label:"FLK"},
+      {token:"INSTAGRAM",label:"Instagram"},
+      {token:" IG",label:"Instagram"},
+      {token:"IG ",label:"Instagram"},
+      {token:"LINKEDIN",label:"Linkedin"},
+      {token:"SIM TALENT SEARCH",label:"SIM Talent Search"},
+      {token:"SIM TALENT",label:"SIM Talent Search"},
+      {token:"SIMTALENT",label:"SIM Talent Search"},
+      {token:"TELEGRAM",label:"Telegram"},
+      {token:"TIKTOK",label:"Tiktok"},
+      {token:" TT",label:"Tiktok"},
+      {token:"TWITTER",label:"Twitter"},
+      // Semua token WA / chat dikelompokkan ke "Whatsapp / Media Chat"
+      {token:"WHATSAPP",label:"Whatsapp / Media Chat"},
+      {token:" WA ",label:"Whatsapp / Media Chat"},
+      {token:"WA.",label:"Whatsapp / Media Chat"},
+      {token:"WA/",label:"Whatsapp / Media Chat"},
+      {token:"MEDIA CHAT",label:"Whatsapp / Media Chat"},
+      {token:"CHAT WA",label:"Whatsapp / Media Chat"}
+    ];
+
+    rows.forEach(row=>{
+      const parts = [];
+      if(row[DETECTED_COL_MEDIA] !== undefined) parts.push(row[DETECTED_COL_MEDIA]);
+      if(row[COL_METODE] !== undefined) parts.push(row[COL_METODE]);
+      parts.push(Object.values(row).join(" "));
+
+      const text = norm(parts.join(" | "));
+      if(!text) return;
+
+      let label = null;
+      for(const m of tokenMap){
+        if(text.includes(m.token)){
+          label = m.label;
+          break;
+        }
+      }
+      if(!label) return;
+
+      const item = map.get(label);
+      if(!item) return;
+
+      item.valid += getApplicantValidValue(row[COL_KATEGORI]);
+      if(isQualifiedYes(row[COL_QUALIFIED])) item.buffer += 1;
+    });
+
+    return FIXED_MEDIA_LIST.map(name=>map.get(name));
+  }
+
+  /* TABEL 5: JOB PORTAL */
+  function aggregateJobPortal(rows){
+    const map = new Map();
+    FIXED_PORTAL_LIST.forEach(name=>{
+      map.set(name,{name,valid:0,buffer:0});
+    });
+
+    const tokenMap = [
       {token:"GLINTS",label:"Glints"},
       {token:"HIRED TODAY",label:"Hired Today"},
       {token:"INDEED",label:"Indeed"},
@@ -1387,10 +1549,9 @@
       {token:"JOBSTREET",label:"JobStreet"},
       {token:"JOB STREET",label:"JobStreet"},
       {token:"KARIRHUB",label:"KarirHub"},
+      {token:"KARIR HUB",label:"KarirHub"},
       {token:"KITA LULUS",label:"KitaLulus"},
       {token:"KITALULUS",label:"KitaLulus"},
-      {token:"KUPU",label:"Kupu"},
-      {token:"LINKEDIN",label:"Linkedin"},
       {token:"LUMINA",label:"Lumina"},
       {token:"PINTARNYA",label:"Pintarnya"}
     ];
@@ -1420,7 +1581,99 @@
       if(isQualifiedYes(row[COL_QUALIFIED])) item.buffer += 1;
     });
 
-    return FIXED_MEDIA_LIST.map(name=>map.get(name));
+    return FIXED_PORTAL_LIST.map(name=>map.get(name));
+  }
+
+  /* TABEL 6: OFFLINE */
+  function aggregateOffline(rows){
+    const map = new Map();
+    FIXED_OFFLINE_LIST.forEach(name=>{
+      map.set(name,{name,valid:0,buffer:0});
+    });
+
+    const tokenMap = [
+      // Academy/Training/Seminar
+      {token:"ACADEMY",label:"Academy/Training/Seminar"},
+      {token:"TRAINING",label:"Academy/Training/Seminar"},
+      {token:"SEMINAR",label:"Academy/Training/Seminar"},
+
+      // BLK
+      {token:"BALAI LATIHAN KERJA",label:"Balai Latian Kerja (BLK)"},
+      {token:"BALAI LATIAN",label:"Balai Latian Kerja (BLK)"},
+      {token:" BLK",label:"Balai Latian Kerja (BLK)"},
+
+      // Brosur/Banner/Spanduk/Flyer
+      {token:"BROSUR",label:"Brosur/Banner/Spanduk/Flyer"},
+      {token:"BANNER",label:"Brosur/Banner/Spanduk/Flyer"},
+      {token:"SPANDUK",label:"Brosur/Banner/Spanduk/Flyer"},
+      {token:"FLYER",label:"Brosur/Banner/Spanduk/Flyer"},
+
+      // Campus Hiring
+      {token:"CAMPUS HIRING",label:"Campus Hiring"},
+      {token:"CAMPUS",label:"Campus Hiring"},
+
+      // Disnaker
+      {token:"DISNAKER",label:"Disnaker"},
+
+      // Drop CV
+      {token:"DROP CV",label:"Drop CV"},
+
+      // Freelance Recruiter
+      {token:"FREELANCE RECRUITER",label:"Freelance Recruiter"},
+      {token:"FREELANCE REC",label:"Freelance Recruiter"},
+
+      // Job Fair
+      {token:"JOB FAIR",label:"Job Fair"},
+
+      // Komunitas Informal
+      {token:"KOMUNITAS INFORMAL",label:"Komunitas Informal"},
+
+      // Referensi Client
+      {token:"REFERENSI CLIENT",label:"Referensi Client"},
+      {token:"REF CLIENT",label:"Referensi Client"},
+
+      // Referensi Teman/Keluarga/Komunitas
+      {token:"REFERENSI TEMAN",label:"Referensi Teman/Keluarga/Komunitas"},
+      {token:"REF TEMAN",label:"Referensi Teman/Keluarga/Komunitas"},
+      {token:"REFERENSI KELUARGA",label:"Referensi Teman/Keluarga/Komunitas"},
+      {token:"REFERENSI KOMUNITAS",label:"Referensi Teman/Keluarga/Komunitas"},
+
+      // School Hiring
+      {token:"SCHOOL HIRING",label:"School Hiring"},
+      {token:"SCHOOL",label:"School Hiring"},
+
+      // Walk In Interview (WI)
+      {token:"WALK IN",label:"Walk In Interview (WI)"},
+      {token:"WALKIN",label:"Walk In Interview (WI)"},
+      {token:" WI",label:"Walk In Interview (WI)"}
+    ];
+
+    rows.forEach(row=>{
+      const parts = [];
+      if(row[DETECTED_COL_MEDIA] !== undefined) parts.push(row[DETECTED_COL_MEDIA]);
+      if(row[COL_METODE] !== undefined) parts.push(row[COL_METODE]);
+      parts.push(Object.values(row).join(" "));
+
+      const text = norm(parts.join(" | "));
+      if(!text) return;
+
+      let label = null;
+      for(const m of tokenMap){
+        if(text.includes(m.token)){
+          label = m.label;
+          break;
+        }
+      }
+      if(!label) return;
+
+      const item = map.get(label);
+      if(!item) return;
+
+      item.valid += getApplicantValidValue(row[COL_KATEGORI]);
+      if(isQualifiedYes(row[COL_QUALIFIED])) item.buffer += 1;
+    });
+
+    return FIXED_OFFLINE_LIST.map(name=>map.get(name));
   }
 
   function parseMonthIndex(str){
@@ -1648,17 +1901,33 @@
       `Ditampilkan ${metodeAgg.length} metode · ${numberFmt.format(totalRows)} baris terfilter · ` +
       `Grand Total Valid: ${numberFmt.format(totalMetode.grandValid)}, Buffer: ${numberFmt.format(totalMetode.grandBuffer)}`;
 
-    const mediaAgg = aggregateMediaSmart(filtered);
-    const totalMedia = renderTable("tbl-media-body",mediaAgg,"GRAND TOTAL MEDIA");
+    // TABEL 3: MEDIA SOSIAL
+    const mediaAgg = aggregateMediaSocial(filtered);
+    const totalMedia = renderTable("tbl-media-body",mediaAgg,"GRAND TOTAL MEDIA SOSIAL");
     $("status-media").textContent =
-      `Ditampilkan ${mediaAgg.length} media · ${numberFmt.format(totalRows)} baris terfilter · ` +
+      `Ditampilkan ${mediaAgg.length} media sosial · ${numberFmt.format(totalRows)} baris terfilter · ` +
       `Grand Total Valid: ${numberFmt.format(totalMedia.grandValid)}, Buffer: ${numberFmt.format(totalMedia.grandBuffer)}`;
 
+    // TABEL 4: PENDIDIKAN
     const eduAgg = aggregateByFixedList(filtered,COL_EDU,FIXED_EDU_LIST);
     const totalEdu = renderTable("tbl-edu-body",eduAgg,"GRAND TOTAL PENDIDIKAN");
     $("status-edu").textContent =
       `Ditampilkan ${eduAgg.length} level pendidikan · ${numberFmt.format(totalRows)} baris terfilter · ` +
       `Grand Total Valid: ${numberFmt.format(totalEdu.grandValid)}, Buffer: ${numberFmt.format(totalEdu.grandBuffer)}`;
+
+    // TABEL 5: JOB PORTAL
+    const portalAgg = aggregateJobPortal(filtered);
+    const totalPortal = renderTable("tbl-jobportal-body",portalAgg,"GRAND TOTAL JOB PORTAL");
+    $("status-jobportal").textContent =
+      `Ditampilkan ${portalAgg.length} job portal · ${numberFmt.format(totalRows)} baris terfilter · ` +
+      `Grand Total Valid: ${numberFmt.format(totalPortal.grandValid)}, Buffer: ${numberFmt.format(totalPortal.grandBuffer)}`;
+
+    // TABEL 6: OFFLINE
+    const offlineAgg = aggregateOffline(filtered);
+    const totalOffline = renderTable("tbl-offline-body",offlineAgg,"GRAND TOTAL OFFLINE");
+    $("status-offline").textContent =
+      `Ditampilkan ${offlineAgg.length} sumber offline · ${numberFmt.format(totalRows)} baris terfilter · ` +
+      `Grand Total Valid: ${numberFmt.format(totalOffline.grandValid)}, Buffer: ${numberFmt.format(totalOffline.grandBuffer)}`;
   }
 
   async function loadCsv(){
@@ -1699,7 +1968,7 @@
       errBox.textContent =
         "Terjadi kesalahan saat memuat data: " + e.message +
         ". Pastikan link ini bisa dibuka di tab incognito tanpa login.";
-      errBox.display = "block";
+      errBox.style.display = "block";
     }
   }
 
