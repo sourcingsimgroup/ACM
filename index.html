@@ -10,6 +10,9 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
 
+  <!-- PapaParse untuk parsing CSV -->
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+
   <style>
     :root{
       --bg:#f5f7fb;
@@ -291,7 +294,6 @@
       border-radius:999px;
     }
 
-    /* warna: biru untuk Valid, oranye untuk Buffer */
     .legend-valid{background:#2563eb;}
     .legend-buffer{background:#f97316;}
 
@@ -572,7 +574,7 @@
     <div class="title-right">
       <span class="pill">
         <span class="pill-dot"></span>
-        Live from Google Sheets (via JSON)
+        Live from Google Sheets (CSV)
       </span>
     </div>
   </header>
@@ -905,9 +907,20 @@
 
 <script>
   /********** KONFIGURASI **********/
-  // Ganti SPREADSHEET_ID & NAMA_SHEET jika perlu
-  const DATA_URL = "https://opensheet.elk.sh/1cqs8xQevxv7avtLy3jRrkrgg0zgJSt3EqMYLdWy_Tts/Responses";
 
+  // === PENTING: GANTI 2 KONSTAN INI ===
+  // Contoh link Google Sheets:
+  // https://docs.google.com/spreadsheets/d/1AbCdEfGhIjKlMnOpQrStUvWxYz1234567890/edit#gid=0
+  //  - SPREADSHEET_ID = "1AbCdEfGhIjKlMnOpQrStUvWxYz1234567890"
+  //  - SHEET_NAME     = "Responses"  (atau nama sheet yang kamu pakai)
+  const SPREADSHEET_ID = "GANTI_DENGAN_SPREADSHEET_ID_KAMU";
+  const SHEET_NAME     = "Responses";
+
+  // Endpoint CSV publik (per sheet) – tidak perlu 2PACX / gid
+  const CSV_URL =
+    `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(SHEET_NAME)}`;
+
+  // ================================
   const COL_PROV      = "PROVINSI MINAT PENEMPATAN";
   const COL_KOTA      = "KOTA MINAT PENEMPATAN";
   const COL_CYCLE     = "CYCLE HIRED";
@@ -1062,6 +1075,7 @@
       searchInput.value = "";
       renderOptions();
       updateLabel();
+      if(onChange) onChange(getSelected());
     }
 
     function setDisabled(flag){
@@ -1581,10 +1595,10 @@
       if(buffer) totalBuffer += buffer;
 
       const g = norm(row[COL_GENDER]);
-      if(g.includes("LAKI") || g === "L" || g === "LAKI-LAKI"){
+      if(g.includes("LAKI") || g === "L" || g === "Laki-Laki"){
         maleValid  += valid;
         maleBuffer += buffer;
-      }else if(g.includes("PEREMPUAN") || g === "P" || g === "PEREMPUAN"){
+      }else if(g.includes("PEREMPUAN") || g === "P" || g === "Perempuan"){
         femaleValid  += valid;
         femaleBuffer += buffer;
       }
@@ -1633,19 +1647,28 @@
       `Grand Total Valid: ${numberFmt.format(totalEdu.grandValid)}, Buffer: ${numberFmt.format(totalEdu.grandBuffer)}`;
   }
 
-  /********** LOAD DATA (JSON dari opensheet) **********/
-  async function loadData(){
-    $("error-state").style.display = "none";
+  /********** LOAD CSV **********/
+  async function loadCsv(){
+    const errorBox = $("error-state");
+    errorBox.style.display = "none";
     $("load-state").style.display = "flex";
 
     try{
-      const res = await fetch(DATA_URL);
-      if(!res.ok) throw new Error("Gagal fetch data: " + res.status + " " + res.statusText);
+      const res = await fetch(CSV_URL);
+      if(!res.ok){
+        let extra = "";
+        try{
+          const txt = await res.text();
+          if(txt) extra = " · " + txt.slice(0,120);
+        }catch(_){}
+        throw new Error(`Gagal fetch data (HTTP ${res.status} ${res.statusText})${extra}`);
+      }
+      const text = await res.text();
 
-      const data = await res.json();
-      rawRows = Array.isArray(data) ? data : [];
+      const parsed = Papa.parse(text,{header:true,skipEmptyLines:true});
+      rawRows = parsed.data || [];
 
-      const fields = rawRows.length ? Object.keys(rawRows[0]) : [];
+      const fields = parsed.meta && parsed.meta.fields ? parsed.meta.fields : [];
 
       DETECTED_COL_MEDIA = detectMediaColumn(fields);
       const jobCols = detectJobColumns(fields);
@@ -1655,8 +1678,8 @@
       $("load-state").style.display = "none";
 
       if(!rawRows.length){
-        $("error-state").textContent = "Data kosong atau header kolom belum sesuai dengan konfigurasi.";
-        $("error-state").style.display = "block";
+        errorBox.textContent = "Data kosong atau header kolom belum sesuai dengan konfigurasi.";
+        errorBox.style.display = "block";
         return;
       }
 
@@ -1666,15 +1689,17 @@
     }catch(err){
       console.error(err);
       $("load-state").style.display = "none";
-      $("error-state").textContent = "Terjadi kesalahan saat memuat data: " + err.message;
-      $("error-state").style.display = "block";
+      errorBox.textContent =
+        "Terjadi kesalahan saat memuat data: " + err.message +
+        " | Cek lagi SPREADSHEET_ID, SHEET_NAME & permission (Anyone with link - Viewer).";
+      errorBox.style.display = "block";
     }
   }
 
   document.addEventListener("DOMContentLoaded",()=>{
     const clearBtn = $("clear-filters-btn");
     if(clearBtn) clearBtn.addEventListener("click",clearFilters);
-    loadData();
+    loadCsv();
   });
 </script>
 </body>
