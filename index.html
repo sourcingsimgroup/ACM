@@ -972,6 +972,7 @@
   let COL_JOB_TYPE   = "JOB TYPE";
 
   const KATEGORI_VALID_TARGET = "APLIKAN VALID - CTC 1";
+  const LABEL_LAINNYA = "LAINNYA / TIDAK TERDETEKSI";
 
   const FIXED_PROV_LIST = [
     "ACEH (NAD)","BALI","BANTEN","BENGKULU","DI YOGYAKARTA","DKI JAKARTA",
@@ -1364,8 +1365,15 @@
     );
   }
 
-  function aggregateByFixedList(rows,dimCol,fixedList){
+  // AGREGASI LIST FIXED + LAINNYA (opsional)
+  function aggregateByFixedList(rows,dimCol,fixedList,addOthers=false){
     const result = fixedList.map(name=>({name,valid:0,buffer:0}));
+    let othersIndex = -1;
+    if(addOthers){
+      othersIndex = result.length;
+      result.push({name:LABEL_LAINNYA,valid:0,buffer:0});
+    }
+
     const idxMap = new Map();
     fixedList.forEach((name,i)=>{
       idxMap.set(name,i);
@@ -1373,15 +1381,34 @@
     });
 
     rows.forEach(row=>{
-      const keyRaw = row[dimCol];
-      if(!keyRaw) return;
-      const keyNorm = norm(keyRaw);
-      let idx = idxMap.get(keyRaw);
-      if(idx === undefined) idx = idxMap.get(keyNorm);
-      if(idx === undefined) return;
+      const rawVal = row[dimCol];
+      const valid  = getApplicantValidValue(row[COL_KATEGORI]);
+      const buffer = isQualifiedYes(row[COL_QUALIFIED]) ? 1 : 0;
+      if(!valid && !buffer) return;
 
-      result[idx].valid  += getApplicantValidValue(row[COL_KATEGORI]);
-      if(isQualifiedYes(row[COL_QUALIFIED])) result[idx].buffer += 1;
+      if(rawVal === undefined || rawVal === null || String(rawVal).trim()===""){
+        if(addOthers && othersIndex !== -1){
+          result[othersIndex].valid  += valid;
+          result[othersIndex].buffer += buffer;
+        }
+        return;
+      }
+
+      const keyStr  = String(rawVal);
+      const keyNorm = norm(keyStr);
+      let idx = idxMap.get(keyStr);
+      if(idx === undefined) idx = idxMap.get(keyNorm);
+
+      if(idx === undefined){
+        if(addOthers && othersIndex !== -1){
+          idx = othersIndex;
+        }else{
+          return;
+        }
+      }
+
+      result[idx].valid  += valid;
+      result[idx].buffer += buffer;
     });
 
     return result;
@@ -1393,73 +1420,104 @@
 
     rows.forEach(row=>{
       const prov = row[COL_PROV];
+      const valid  = getApplicantValidValue(row[COL_KATEGORI]);
+      const buffer = isQualifiedYes(row[COL_QUALIFIED]) ? 1 : 0;
+      if(!valid && !buffer) return;
       if(!prov) return;
+
       const key = String(prov);
       if(!map.has(key)){
         map.set(key,{name:key,valid:0,buffer:0});
       }
       const obj = map.get(key);
-      obj.valid  += getApplicantValidValue(row[COL_KATEGORI]);
-      if(isQualifiedYes(row[COL_QUALIFIED])) obj.buffer += 1;
+      obj.valid  += valid;
+      obj.buffer += buffer;
     });
 
-    // Hanya yang punya nilai > 0 yang dimunculkan
     const res = Array.from(map.values()).filter(r => (r.valid || r.buffer));
-
-    // Urutkan alfabetis
     res.sort((a,b)=>String(a.name).localeCompare(String(b.name),"id"));
-
     return res;
   }
 
+  // METODE SOURCING: OFFLINE, ONLINE-MEDSOS, ONLINE-JOB PORTAL, LAINNYA
   function aggregateMetodeSmart(rows){
     const buckets = {
       "OFFLINE": {name:"OFFLINE",valid:0,buffer:0},
       "ONLINE - MEDIA SOSIAL": {name:"ONLINE - MEDIA SOSIAL",valid:0,buffer:0},
-      "ONLINE - JOB PORTAL": {name:"ONLINE - JOB PORTAL",valid:0,buffer:0}
+      "ONLINE - JOB PORTAL": {name:"ONLINE - JOB PORTAL",valid:0,buffer:0},
+      "LAINNYA": {name:LABEL_LAINNYA,valid:0,buffer:0}
     };
 
     rows.forEach(row=>{
       const textMetode = norm(row[COL_METODE]);
       const textMedia  = norm(row[DETECTED_COL_MEDIA]);
       const text = (textMetode + " " + textMedia).trim();
-      if(!text) return;
+
+      const valid  = getApplicantValidValue(row[COL_KATEGORI]);
+      const buffer = isQualifiedYes(row[COL_QUALIFIED]) ? 1 : 0;
+      if(!valid && !buffer) return;
 
       let key = null;
 
-      if(text.includes("OFFLINE") || text.includes("WALK IN") || text.includes("WALKIN") || text.includes("JOB FAIR")){
+      // 1) OFFLINE
+      if(
+        text.includes("OFFLINE") ||
+        text.includes("WALK IN") ||
+        text.includes("WALKIN") ||
+        text.includes("JOB FAIR")
+      ){
         key = "OFFLINE";
+
+      // 2) ONLINE - MEDIA SOSIAL
       } else if(
-        ["FACEBOOK","FB","INSTAGRAM","IG","TIKTOK","TT","LINKEDIN","WA","WHATSAPP","TELEGRAM","TWITTER","MEDSOS","MEDIA SOSIAL"]
-          .some(t=>text.includes(t))
+        [
+          "FACEBOOK","FB","INSTAGRAM","IG","TIKTOK","TT","LINKEDIN",
+          "WA","WHATSAPP","TELEGRAM","TWITTER","MEDSOS","MEDIA SOSIAL"
+        ].some(t=>text.includes(t))
       ){
         key = "ONLINE - MEDIA SOSIAL";
+
+      // 3) ONLINE - JOB PORTAL
       } else if(
-        ["GLINTS","HIRED TODAY","INDEED","JOBSTREET","JOB STREET","EXPRESS",
-         "KARIRHUB","KARIR HUB","KITA LULUS","KITALULUS","KUPU","LUMINA","PINTARNYA","PORTAL"]
-          .some(t=>text.includes(t))
+        [
+          "GLINTS","HIRED TODAY","INDEED","JOBSTREET","JOB STREET","EXPRESS",
+          "KARIRHUB","KARIR HUB","KITA LULUS","KITALULUS",
+          "KUPU","LUMINA","PINTARNYA","PORTAL"
+        ].some(t=>text.includes(t))
       ){
         key = "ONLINE - JOB PORTAL";
       }
 
-      if(!key) return;
-      buckets[key].valid += getApplicantValidValue(row[COL_KATEGORI]);
-      if(isQualifiedYes(row[COL_QUALIFIED])) buckets[key].buffer += 1;
+      // 4) fallback: kalau ada kata "ONLINE" tapi belum kena pattern jelas
+      if(!key && text.includes("ONLINE")){
+        key = "ONLINE - MEDIA SOSIAL";
+      }
+
+      // 5) fallback terakhir: semua yang tidak terdeteksi
+      if(!key){
+        key = "LAINNYA";
+      }
+
+      const bucket = buckets[key];
+      bucket.valid  += valid;
+      bucket.buffer += buffer;
     });
 
     return [
       buckets["OFFLINE"],
       buckets["ONLINE - MEDIA SOSIAL"],
-      buckets["ONLINE - JOB PORTAL"]
+      buckets["ONLINE - JOB PORTAL"],
+      buckets["LAINNYA"]
     ];
   }
 
-  /* TABEL 3: MEDIA SOSIAL */
+  /* TABEL 3: MEDIA SOSIAL + LAINNYA */
   function aggregateMediaSocial(rows){
     const map = new Map();
     FIXED_MEDIA_LIST.forEach(name=>{
       map.set(name,{name,valid:0,buffer:0});
     });
+    map.set(LABEL_LAINNYA,{name:LABEL_LAINNYA,valid:0,buffer:0});
 
     const tokenMap = [
       {token:"FACEBOOK",label:"Facebook"},
@@ -1476,7 +1534,7 @@
       {token:"TIKTOK",label:"Tiktok"},
       {token:" TT",label:"Tiktok"},
       {token:"TWITTER",label:"Twitter"},
-      // Semua token WA / chat dikelompokkan ke "Whatsapp / Media Chat"
+      // WA / chat -> Whatsapp / Media Chat
       {token:"WHATSAPP",label:"Whatsapp / Media Chat"},
       {token:" WA ",label:"Whatsapp / Media Chat"},
       {token:"WA.",label:"Whatsapp / Media Chat"},
@@ -1486,11 +1544,13 @@
     ];
 
     rows.forEach(row=>{
-      const parts = [];
-      if(row[DETECTED_COL_MEDIA] !== undefined) parts.push(row[DETECTED_COL_MEDIA]);
-      if(row[COL_METODE] !== undefined) parts.push(row[COL_METODE]);
-      parts.push(Object.values(row).join(" "));
+      const valid  = getApplicantValidValue(row[COL_KATEGORI]);
+      const buffer = isQualifiedYes(row[COL_QUALIFIED]) ? 1 : 0;
+      if(!valid && !buffer) return;
 
+      const parts = [];
+      if(row[DETECTED_COL_MEDIA]) parts.push(row[DETECTED_COL_MEDIA]);
+      if(row[COL_METODE])        parts.push(row[COL_METODE]);
       const text = norm(parts.join(" | "));
       if(!text) return;
 
@@ -1501,24 +1561,29 @@
           break;
         }
       }
-      if(!label) return;
+      if(!label){
+        label = LABEL_LAINNYA;
+      }
 
       const item = map.get(label);
       if(!item) return;
 
-      item.valid += getApplicantValidValue(row[COL_KATEGORI]);
-      if(isQualifiedYes(row[COL_QUALIFIED])) item.buffer += 1;
+      item.valid  += valid;
+      item.buffer += buffer;
     });
 
-    return FIXED_MEDIA_LIST.map(name=>map.get(name));
+    const result = FIXED_MEDIA_LIST.map(name=>map.get(name));
+    result.push(map.get(LABEL_LAINNYA));
+    return result;
   }
 
-  /* TABEL 5: JOB PORTAL */
+  /* TABEL 5: JOB PORTAL + LAINNYA */
   function aggregateJobPortal(rows){
     const map = new Map();
     FIXED_PORTAL_LIST.forEach(name=>{
       map.set(name,{name,valid:0,buffer:0});
     });
+    map.set(LABEL_LAINNYA,{name:LABEL_LAINNYA,valid:0,buffer:0});
 
     const tokenMap = [
       {token:"GLINTS",label:"Glints"},
@@ -1537,11 +1602,13 @@
     ];
 
     rows.forEach(row=>{
-      const parts = [];
-      if(row[DETECTED_COL_MEDIA] !== undefined) parts.push(row[DETECTED_COL_MEDIA]);
-      if(row[COL_METODE] !== undefined) parts.push(row[COL_METODE]);
-      parts.push(Object.values(row).join(" "));
+      const valid  = getApplicantValidValue(row[COL_KATEGORI]);
+      const buffer = isQualifiedYes(row[COL_QUALIFIED]) ? 1 : 0;
+      if(!valid && !buffer) return;
 
+      const parts = [];
+      if(row[DETECTED_COL_MEDIA]) parts.push(row[DETECTED_COL_MEDIA]);
+      if(row[COL_METODE])        parts.push(row[COL_METODE]);
       const text = norm(parts.join(" | "));
       if(!text) return;
 
@@ -1552,24 +1619,29 @@
           break;
         }
       }
-      if(!label) return;
+      if(!label){
+        label = LABEL_LAINNYA;
+      }
 
       const item = map.get(label);
       if(!item) return;
 
-      item.valid += getApplicantValidValue(row[COL_KATEGORI]);
-      if(isQualifiedYes(row[COL_QUALIFIED])) item.buffer += 1;
+      item.valid  += valid;
+      item.buffer += buffer;
     });
 
-    return FIXED_PORTAL_LIST.map(name=>map.get(name));
+    const result = FIXED_PORTAL_LIST.map(name=>map.get(name));
+    result.push(map.get(LABEL_LAINNYA));
+    return result;
   }
 
-  /* TABEL 6: OFFLINE */
+  /* TABEL 6: OFFLINE + LAINNYA */
   function aggregateOffline(rows){
     const map = new Map();
     FIXED_OFFLINE_LIST.forEach(name=>{
       map.set(name,{name,valid:0,buffer:0});
     });
+    map.set(LABEL_LAINNYA,{name:LABEL_LAINNYA,valid:0,buffer:0});
 
     const tokenMap = [
       // Academy/Training/Seminar
@@ -1629,11 +1701,13 @@
     ];
 
     rows.forEach(row=>{
-      const parts = [];
-      if(row[DETECTED_COL_MEDIA] !== undefined) parts.push(row[DETECTED_COL_MEDIA]);
-      if(row[COL_METODE] !== undefined) parts.push(row[COL_METODE]);
-      parts.push(Object.values(row).join(" "));
+      const valid  = getApplicantValidValue(row[COL_KATEGORI]);
+      const buffer = isQualifiedYes(row[COL_QUALIFIED]) ? 1 : 0;
+      if(!valid && !buffer) return;
 
+      const parts = [];
+      if(row[DETECTED_COL_MEDIA]) parts.push(row[DETECTED_COL_MEDIA]);
+      if(row[COL_METODE])        parts.push(row[COL_METODE]);
       const text = norm(parts.join(" | "));
       if(!text) return;
 
@@ -1644,16 +1718,20 @@
           break;
         }
       }
-      if(!label) return;
+      if(!label){
+        label = LABEL_LAINNYA;
+      }
 
       const item = map.get(label);
       if(!item) return;
 
-      item.valid += getApplicantValidValue(row[COL_KATEGORI]);
-      if(isQualifiedYes(row[COL_QUALIFIED])) item.buffer += 1;
+      item.valid  += valid;
+      item.buffer += buffer;
     });
 
-    return FIXED_OFFLINE_LIST.map(name=>map.get(name));
+    const result = FIXED_OFFLINE_LIST.map(name=>map.get(name));
+    result.push(map.get(LABEL_LAINNYA));
+    return result;
   }
 
   function parseMonthIndex(str){
@@ -1864,10 +1942,10 @@
     updateChart(filtered);
 
     // TABEL PROVINSI:
-    // - Kalau TIDAK ada filter sama sekali -> pakai FIXED_PROV_LIST (semua provinsi muncul).
+    // - Kalau TIDAK ada filter sama sekali -> pakai FIXED_PROV_LIST + LAINNYA.
     // - Kalau ADA filter -> pakai agregasi dinamis (hanya provinsi yang punya data > 0).
     const provAgg = noFilter
-      ? aggregateByFixedList(filtered,COL_PROV,FIXED_PROV_LIST)
+      ? aggregateByFixedList(filtered,COL_PROV,FIXED_PROV_LIST,true)
       : aggregateProvDynamic(filtered);
 
     const totalProv = renderTable("tbl-prov-body",provAgg,"GRAND TOTAL PROVINSI");
@@ -1875,6 +1953,7 @@
       `Ditampilkan ${provAgg.length} provinsi · ${numberFmt.format(totalRows)} baris terfilter · ` +
       `Grand Total Valid: ${numberFmt.format(totalProv.grandValid)}, Buffer: ${numberFmt.format(totalProv.grandBuffer)}`;
 
+    // TABEL 2: METODE SOURCING (OFFLINE/ONLINE/LAINNYA)
     const metodeAgg = aggregateMetodeSmart(filtered);
     const totalMetode = renderTable("tbl-metode-body",metodeAgg,"GRAND TOTAL METODE");
     $("status-metode").textContent =
@@ -1888,8 +1967,8 @@
       `Ditampilkan ${mediaAgg.length} media sosial · ${numberFmt.format(totalRows)} baris terfilter · ` +
       `Grand Total Valid: ${numberFmt.format(totalMedia.grandValid)}, Buffer: ${numberFmt.format(totalMedia.grandBuffer)}`;
 
-    // TABEL 4: PENDIDIKAN
-    const eduAgg = aggregateByFixedList(filtered,COL_EDU,FIXED_EDU_LIST);
+    // TABEL 4: PENDIDIKAN (dengan LAINNYA)
+    const eduAgg = aggregateByFixedList(filtered,COL_EDU,FIXED_EDU_LIST,true);
     const totalEdu = renderTable("tbl-edu-body",eduAgg,"GRAND TOTAL PENDIDIKAN");
     $("status-edu").textContent =
       `Ditampilkan ${eduAgg.length} level pendidikan · ${numberFmt.format(totalRows)} baris terfilter · ` +
