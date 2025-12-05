@@ -733,7 +733,7 @@
   <section class="summary-row">
     <div class="summary-card male">
       <div class="summary-header">
-        <div class="summary-title">Summary Pria</div>
+        <div class="summary-title">Summary Laki-Laki</div>
         <div class="summary-tag">Jenis Kelamin: L</div>
       </div>
       <div class="summary-body">
@@ -750,7 +750,7 @@
 
     <div class="summary-card female">
       <div class="summary-header">
-        <div class="summary-title">Summary Wanita</div>
+        <div class="summary-title">Summary Perempuan</div>
         <div class="summary-tag">Jenis Kelamin: P</div>
       </div>
       <div class="summary-body">
@@ -1583,10 +1583,10 @@
       if(buffer) totalBuffer += buffer;
 
       const g = norm(row[COL_GENDER]);
-      if(g.includes("LAKI") || g === "L" || g === "PRIA"){
+      if(g.includes("LAKI") || g === "L" || g === "Laki-Laki"){
         maleValid  += valid;
         maleBuffer += buffer;
-      }else if(g.includes("PEREMPUAN") || g === "P" || g === "WANITA"){
+      }else if(g.includes("PEREMPUAN") || g === "P" || g === "Perempuan"){
         femaleValid  += valid;
         femaleBuffer += buffer;
       }
