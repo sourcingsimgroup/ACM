@@ -1260,6 +1260,25 @@
     });
   }
 
+  // Mengecek apakah benar-benar tidak ada filter aktif sama sekali
+  function isNoFilterActive(){
+    const provSel      = msProv      ? msProv.getSelected()      : [];
+    const kotaSel      = msKota      ? msKota.getSelected()      : [];
+    const cycleSel     = msCycle     ? msCycle.getSelected()     : [];
+    const periodeSel   = msPeriode   ? msPeriode.getSelected()   : [];
+    const jobParentSel = msJobParent ? msJobParent.getSelected() : [];
+    const jobTypeSel   = msJobType   ? msJobType.getSelected()   : [];
+
+    return (
+      provSel.length      === 0 &&
+      kotaSel.length      === 0 &&
+      cycleSel.length     === 0 &&
+      periodeSel.length   === 0 &&
+      jobParentSel.length === 0 &&
+      jobTypeSel.length   === 0
+    );
+  }
+
   function aggregateByFixedList(rows,dimCol,fixedList){
     const result = fixedList.map(name=>({name,valid:0,buffer:0}));
     const idxMap = new Map();
@@ -1281,6 +1300,31 @@
     });
 
     return result;
+  }
+
+  // AGREGASI PROVINSI DINAMIS: hanya tampilkan provinsi yang punya Applicant Valid atau Buffer (>0)
+  function aggregateProvDynamic(rows){
+    const map = new Map();
+
+    rows.forEach(row=>{
+      const prov = row[COL_PROV];
+      if(!prov) return;
+      const key = String(prov);
+      if(!map.has(key)){
+        map.set(key,{name:key,valid:0,buffer:0});
+      }
+      const obj = map.get(key);
+      obj.valid  += getApplicantValidValue(row[COL_KATEGORI]);
+      if(isQualifiedYes(row[COL_QUALIFIED])) obj.buffer += 1;
+    });
+
+    // Hanya yang punya nilai > 0 yang dimunculkan
+    const res = Array.from(map.values()).filter(r => (r.valid || r.buffer));
+
+    // Urutkan alfabetis
+    res.sort((a,b)=>String(a.name).localeCompare(String(b.name),"id"));
+
+    return res;
   }
 
   function aggregateMetodeSmart(rows){
@@ -1561,10 +1605,10 @@
       if(buffer) totalBuffer += buffer;
 
       const g = norm(row[COL_GENDER]);
-      if(g.includes("LAKI") || g === "L" || g === "Laki-Laki"){
+      if(g.includes("LAKI") || g === "L" || g === "LAKI-LAKI"){
         maleValid  += valid;
         maleBuffer += buffer;
-      }else if(g.includes("PEREMPUAN") || g === "P" || g === "Perempuan"){
+      }else if(g.includes("PEREMPUAN") || g === "P" || g === "PEREMPUAN"){
         femaleValid  += valid;
         femaleBuffer += buffer;
       }
@@ -1581,11 +1625,18 @@
   function updateAllTables(){
     const filtered = getFilteredRows();
     const totalRows = filtered.length;
+    const noFilter = isNoFilterActive();
 
     updateSummary(filtered);
     updateChart(filtered);
 
-    const provAgg   = aggregateByFixedList(filtered,COL_PROV,FIXED_PROV_LIST);
+    // TABEL PROVINSI:
+    // - Kalau TIDAK ada filter sama sekali -> pakai FIXED_PROV_LIST (semua provinsi muncul).
+    // - Kalau ADA filter -> pakai agregasi dinamis (hanya provinsi yang punya data > 0).
+    const provAgg = noFilter
+      ? aggregateByFixedList(filtered,COL_PROV,FIXED_PROV_LIST)
+      : aggregateProvDynamic(filtered);
+
     const totalProv = renderTable("tbl-prov-body",provAgg,"GRAND TOTAL PROVINSI");
     $("status-prov").textContent =
       `Ditampilkan ${provAgg.length} provinsi · ${numberFmt.format(totalRows)} baris terfilter · ` +
@@ -1648,7 +1699,7 @@
       errBox.textContent =
         "Terjadi kesalahan saat memuat data: " + e.message +
         ". Pastikan link ini bisa dibuka di tab incognito tanpa login.";
-      errBox.style.display = "block";
+      errBox.display = "block";
     }
   }
 
