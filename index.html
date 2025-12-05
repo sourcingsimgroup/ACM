@@ -10,9 +10,6 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-  <!-- PapaParse untuk parsing CSV -->
-  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
-
   <style>
     :root{
       --bg:#f5f7fb;
@@ -575,7 +572,7 @@
     <div class="title-right">
       <span class="pill">
         <span class="pill-dot"></span>
-        Live from Google Sheets CSV
+        Live from Google Sheets (via JSON)
       </span>
     </div>
   </header>
@@ -908,7 +905,8 @@
 
 <script>
   /********** KONFIGURASI **********/
-  const CSV_URL = "https://opensheet.elk.sh/1cqs8xQevxv7avtLy3jRrkrgg0zgJSt3EqMYLdWy_Tts/Responses";
+  // Ganti SPREADSHEET_ID & NAMA_SHEET jika perlu
+  const DATA_URL = "https://opensheet.elk.sh/1cqs8xQevxv7avtLy3jRrkrgg0zgJSt3EqMYLdWy_Tts/Responses";
 
   const COL_PROV      = "PROVINSI MINAT PENEMPATAN";
   const COL_KOTA      = "KOTA MINAT PENEMPATAN";
@@ -1583,10 +1581,10 @@
       if(buffer) totalBuffer += buffer;
 
       const g = norm(row[COL_GENDER]);
-      if(g.includes("LAKI") || g === "L" || g === "Laki-Laki"){
+      if(g.includes("LAKI") || g === "L" || g === "LAKI-LAKI"){
         maleValid  += valid;
         maleBuffer += buffer;
-      }else if(g.includes("PEREMPUAN") || g === "P" || g === "Perempuan"){
+      }else if(g.includes("PEREMPUAN") || g === "P" || g === "PEREMPUAN"){
         femaleValid  += valid;
         femaleBuffer += buffer;
       }
@@ -1635,20 +1633,19 @@
       `Grand Total Valid: ${numberFmt.format(totalEdu.grandValid)}, Buffer: ${numberFmt.format(totalEdu.grandBuffer)}`;
   }
 
-  /********** LOAD CSV **********/
-  async function loadCsv(){
+  /********** LOAD DATA (JSON dari opensheet) **********/
+  async function loadData(){
     $("error-state").style.display = "none";
     $("load-state").style.display = "flex";
 
     try{
-      const res = await fetch(CSV_URL);
-      if(!res.ok) throw new Error("Gagal fetch CSV: "+res.status+" "+res.statusText);
-      const text = await res.text();
+      const res = await fetch(DATA_URL);
+      if(!res.ok) throw new Error("Gagal fetch data: " + res.status + " " + res.statusText);
 
-      const parsed = Papa.parse(text,{header:true,skipEmptyLines:true});
-      rawRows = parsed.data || [];
+      const data = await res.json();
+      rawRows = Array.isArray(data) ? data : [];
 
-      const fields = parsed.meta && parsed.meta.fields ? parsed.meta.fields : [];
+      const fields = rawRows.length ? Object.keys(rawRows[0]) : [];
 
       DETECTED_COL_MEDIA = detectMediaColumn(fields);
       const jobCols = detectJobColumns(fields);
@@ -1669,7 +1666,7 @@
     }catch(err){
       console.error(err);
       $("load-state").style.display = "none";
-      $("error-state").textContent = "Terjadi kesalahan saat memuat data: "+err.message;
+      $("error-state").textContent = "Terjadi kesalahan saat memuat data: " + err.message;
       $("error-state").style.display = "block";
     }
   }
@@ -1677,7 +1674,7 @@
   document.addEventListener("DOMContentLoaded",()=>{
     const clearBtn = $("clear-filters-btn");
     if(clearBtn) clearBtn.addEventListener("click",clearFilters);
-    loadCsv();
+    loadData();
   });
 </script>
 </body>
